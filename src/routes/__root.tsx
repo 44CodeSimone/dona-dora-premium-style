@@ -82,6 +82,13 @@ export const Route = createRootRouteWithContext<{ queryClient: QueryClient }>()(
       { property: "og:site_name", content: "Dona Dora" },
       { property: "og:type", content: "website" },
       { name: "twitter:card", content: "summary_large_image" },
+      { property: "og:title", content: "Dona Dora — Boutique Premium em Urubici/SC" },
+      { name: "twitter:title", content: "Dona Dora — Boutique Premium em Urubici/SC" },
+      { name: "description", content: "Dona Dora Boutique Premium offers a sophisticated online presence for a modern fashion boutique, enhancing sales and brand authority." },
+      { property: "og:description", content: "Dona Dora Boutique Premium offers a sophisticated online presence for a modern fashion boutique, enhancing sales and brand authority." },
+      { name: "twitter:description", content: "Dona Dora Boutique Premium offers a sophisticated online presence for a modern fashion boutique, enhancing sales and brand authority." },
+      { property: "og:image", content: "https://pub-bb2e103a32db4e198524a2e9ed8f35b4.r2.dev/b55eff48-230f-4c54-9095-07956d6339cb/id-preview-53fca528--7db6cd50-c55d-46a5-93e9-c3734975f015.lovable.app-1779254002628.png" },
+      { name: "twitter:image", content: "https://pub-bb2e103a32db4e198524a2e9ed8f35b4.r2.dev/b55eff48-230f-4c54-9095-07956d6339cb/id-preview-53fca528--7db6cd50-c55d-46a5-93e9-c3734975f015.lovable.app-1779254002628.png" },
     ],
     links: [
       { rel: "stylesheet", href: appCss },
