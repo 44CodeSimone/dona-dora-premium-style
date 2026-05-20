@@ -1,6 +1,6 @@
 import { Instagram, MessageCircle, MapPin } from "lucide-react";
+import { Link } from "@tanstack/react-router";
 import logo from "@/assets/logo-wordmark.png";
-
 
 export function Footer() {
   return (
@@ -37,7 +37,7 @@ export function Footer() {
               <li><a href="#sobre" className="gold-underline">Sobre</a></li>
               <li><a href="#categorias" className="gold-underline">Categorias</a></li>
               <li><a href="#colecao" className="gold-underline">Coleção</a></li>
-              <li><a href="#nexa" className="gold-underline">Nexa IA</a></li>
+              <li><a href="#dora" className="gold-underline">Dora IA</a></li>
               <li><a href="#contato" className="gold-underline">Contato</a></li>
             </ul>
           </div>
@@ -69,8 +69,13 @@ export function Footer() {
 
         <div className="mt-16 pt-8 border-t border-background/15 flex flex-col md:flex-row gap-4 items-center justify-between text-xs text-background/55">
           <div>© {new Date().getFullYear()} Dona Dora · Todos os direitos reservados.</div>
-          <div className="tracking-[0.2em] uppercase">
-            Desenvolvido por <span className="text-gold-soft">44CODE</span>
+          <div className="flex items-center gap-6">
+            <Link to="/admin/login" className="hover:text-gold-soft transition-colors tracking-[0.2em] uppercase text-[10px]">
+              Admin
+            </Link>
+            <div className="tracking-[0.2em] uppercase">
+              Desenvolvido por <span className="text-gold-soft">44CODE</span>
+            </div>
           </div>
         </div>
       </div>
