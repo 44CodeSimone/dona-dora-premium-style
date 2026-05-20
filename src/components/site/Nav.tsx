@@ -1,13 +1,13 @@
 import { useEffect, useState } from "react";
 import { Menu, X } from "lucide-react";
+import { Link } from "@tanstack/react-router";
 import logo from "@/assets/logo-wordmark.png";
-
 
 const links = [
   { href: "#sobre", label: "Sobre" },
   { href: "#categorias", label: "Categorias" },
   { href: "#colecao", label: "Coleção" },
-  { href: "#nexa", label: "Nexa IA" },
+  { href: "#dora", label: "Dora IA" },
   { href: "#contato", label: "Contato" },
 ];
 
@@ -26,7 +26,7 @@ export function Nav() {
     <header
       className={`fixed top-0 inset-x-0 z-50 transition-all duration-500 ease-luxe ${
         scrolled
-          ? "bg-background/85 backdrop-blur-xl border-b border-border/60"
+          ? "bg-background/90 backdrop-blur-xl border-b border-border/60"
           : "bg-transparent"
       }`}
     >
@@ -43,13 +43,14 @@ export function Nav() {
           />
         </a>
 
-
         <nav className="hidden md:flex items-center gap-9">
           {links.map((l) => (
             <a
               key={l.href}
               href={l.href}
-              className="gold-underline text-sm text-foreground/80 hover:text-foreground transition-colors"
+              className={`gold-underline text-sm transition-colors ${
+                scrolled ? "text-foreground/80 hover:text-foreground" : "text-background/85 hover:text-background"
+              }`}
             >
               {l.label}
             </a>
@@ -60,14 +61,18 @@ export function Nav() {
           href="https://wa.me/5549991540421"
           target="_blank"
           rel="noreferrer"
-          className="hidden md:inline-flex items-center gap-2 text-xs tracking-[0.2em] uppercase px-5 py-3 bg-foreground text-background hover:bg-foreground/90 transition-all duration-500 ease-luxe"
+          className={`hidden md:inline-flex items-center gap-2 text-xs tracking-[0.2em] uppercase px-5 py-3 transition-all duration-500 ease-luxe ${
+            scrolled
+              ? "bg-foreground text-background hover:bg-foreground/90"
+              : "bg-background text-foreground hover:bg-gold"
+          }`}
         >
           Atendimento
         </a>
 
         <button
           onClick={() => setOpen((s) => !s)}
-          className="md:hidden p-2 -mr-2 text-foreground"
+          className={`md:hidden p-2 -mr-2 ${scrolled ? "text-foreground" : "text-background"}`}
           aria-label="Menu"
         >
           {open ? <X className="size-5" /> : <Menu className="size-5" />}
@@ -99,6 +104,13 @@ export function Nav() {
           >
             Falar no WhatsApp
           </a>
+          <Link
+            to="/admin/login"
+            onClick={() => setOpen(false)}
+            className="mt-2 text-center text-[10px] tracking-luxe uppercase text-muted-foreground py-2"
+          >
+            Acesso administrativo
+          </Link>
         </nav>
       </div>
     </header>
