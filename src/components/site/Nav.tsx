@@ -1,5 +1,7 @@
 import { useEffect, useState } from "react";
 import { Menu, X } from "lucide-react";
+import logo from "@/assets/logo-wordmark.png";
+
 
 const links = [
   { href: "#sobre", label: "Sobre" },
@@ -29,14 +31,18 @@ export function Nav() {
       }`}
     >
       <div className="mx-auto max-w-7xl px-6 md:px-10 h-16 md:h-20 flex items-center justify-between">
-        <a href="#top" className="flex items-baseline gap-2 group">
-          <span className="font-display text-2xl md:text-[28px] leading-none tracking-tight">
-            Dona <span className="italic">Dora</span>
-          </span>
-          <span className="hidden sm:inline text-[10px] tracking-luxe text-muted-foreground uppercase">
-            Boutique
-          </span>
+        <a href="#top" className="flex items-center gap-2 group" aria-label="Dona Dora">
+          <img
+            src={logo}
+            alt="Dona Dora"
+            width={1536}
+            height={1024}
+            className={`h-9 md:h-11 w-auto object-contain transition-[filter] duration-500 ease-luxe ${
+              scrolled ? "invert-0" : "invert brightness-200"
+            }`}
+          />
         </a>
+
 
         <nav className="hidden md:flex items-center gap-9">
           {links.map((l) => (
