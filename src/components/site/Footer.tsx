@@ -1,4 +1,6 @@
 import { Instagram, MessageCircle, MapPin } from "lucide-react";
+import logo from "@/assets/logo-wordmark.png";
+
 
 export function Footer() {
   return (
@@ -6,9 +8,15 @@ export function Footer() {
       <div className="mx-auto max-w-7xl px-6 md:px-10 pt-20 pb-10">
         <div className="grid md:grid-cols-12 gap-12">
           <div className="md:col-span-5">
-            <div className="font-display text-4xl md:text-5xl leading-none">
-              Dona <span className="italic text-gold-soft">Dora</span>
-            </div>
+            <img
+              src={logo}
+              alt="Dona Dora"
+              width={1536}
+              height={1024}
+              loading="lazy"
+              className="h-16 md:h-20 w-auto object-contain invert brightness-200"
+            />
+
             <p className="mt-5 text-background/65 max-w-sm text-pretty">
               Boutique premium em Urubici/SC — moda feminina, masculina, acessórios e joias.
               Curadoria, elegância e estilo.
