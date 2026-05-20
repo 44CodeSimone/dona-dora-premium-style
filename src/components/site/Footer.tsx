@@ -1,6 +1,4 @@
 import { Instagram, MessageCircle, MapPin } from "lucide-react";
-import { Link } from "@tanstack/react-router";
-import logo from "@/assets/logo-wordmark.png";
 
 export function Footer() {
   return (
@@ -8,15 +6,9 @@ export function Footer() {
       <div className="mx-auto max-w-7xl px-6 md:px-10 pt-20 pb-10">
         <div className="grid md:grid-cols-12 gap-12">
           <div className="md:col-span-5">
-            <img
-              src={logo}
-              alt="Dona Dora"
-              width={1536}
-              height={1024}
-              loading="lazy"
-              className="h-16 md:h-20 w-auto object-contain invert brightness-200"
-            />
-
+            <div className="font-display text-4xl md:text-5xl leading-none">
+              Dona <span className="italic text-gold-soft">Dora</span>
+            </div>
             <p className="mt-5 text-background/65 max-w-sm text-pretty">
               Boutique premium em Urubici/SC — moda feminina, masculina, acessórios e joias.
               Curadoria, elegância e estilo.
@@ -37,7 +29,7 @@ export function Footer() {
               <li><a href="#sobre" className="gold-underline">Sobre</a></li>
               <li><a href="#categorias" className="gold-underline">Categorias</a></li>
               <li><a href="#colecao" className="gold-underline">Coleção</a></li>
-              <li><a href="#dora" className="gold-underline">Dora IA</a></li>
+              <li><a href="#nexa" className="gold-underline">Nexa IA</a></li>
               <li><a href="#contato" className="gold-underline">Contato</a></li>
             </ul>
           </div>
@@ -69,13 +61,8 @@ export function Footer() {
 
         <div className="mt-16 pt-8 border-t border-background/15 flex flex-col md:flex-row gap-4 items-center justify-between text-xs text-background/55">
           <div>© {new Date().getFullYear()} Dona Dora · Todos os direitos reservados.</div>
-          <div className="flex items-center gap-6">
-            <Link to="/admin/login" className="hover:text-gold-soft transition-colors tracking-[0.2em] uppercase text-[10px]">
-              Admin
-            </Link>
-            <div className="tracking-[0.2em] uppercase">
-              Desenvolvido por <span className="text-gold-soft">44CODE</span>
-            </div>
+          <div className="tracking-[0.2em] uppercase">
+            Desenvolvido por <span className="text-gold-soft">44CODE</span>
           </div>
         </div>
       </div>

@@ -1,13 +1,11 @@
 import { useEffect, useState } from "react";
 import { Menu, X } from "lucide-react";
-import { Link } from "@tanstack/react-router";
-import logo from "@/assets/logo-wordmark.png";
 
 const links = [
   { href: "#sobre", label: "Sobre" },
   { href: "#categorias", label: "Categorias" },
   { href: "#colecao", label: "Coleção" },
-  { href: "#dora", label: "Dora IA" },
+  { href: "#nexa", label: "Nexa IA" },
   { href: "#contato", label: "Contato" },
 ];
 
@@ -26,21 +24,18 @@ export function Nav() {
     <header
       className={`fixed top-0 inset-x-0 z-50 transition-all duration-500 ease-luxe ${
         scrolled
-          ? "bg-background/90 backdrop-blur-xl border-b border-border/60"
+          ? "bg-background/85 backdrop-blur-xl border-b border-border/60"
           : "bg-transparent"
       }`}
     >
       <div className="mx-auto max-w-7xl px-6 md:px-10 h-16 md:h-20 flex items-center justify-between">
-        <a href="#top" className="flex items-center gap-2 group" aria-label="Dona Dora">
-          <img
-            src={logo}
-            alt="Dona Dora"
-            width={1536}
-            height={1024}
-            className={`h-9 md:h-11 w-auto object-contain transition-[filter] duration-500 ease-luxe ${
-              scrolled ? "invert-0" : "invert brightness-200"
-            }`}
-          />
+        <a href="#top" className="flex items-baseline gap-2 group">
+          <span className="font-display text-2xl md:text-[28px] leading-none tracking-tight">
+            Dona <span className="italic">Dora</span>
+          </span>
+          <span className="hidden sm:inline text-[10px] tracking-luxe text-muted-foreground uppercase">
+            Boutique
+          </span>
         </a>
 
         <nav className="hidden md:flex items-center gap-9">
@@ -48,9 +43,7 @@ export function Nav() {
             <a
               key={l.href}
               href={l.href}
-              className={`gold-underline text-sm transition-colors ${
-                scrolled ? "text-foreground/80 hover:text-foreground" : "text-background/85 hover:text-background"
-              }`}
+              className="gold-underline text-sm text-foreground/80 hover:text-foreground transition-colors"
             >
               {l.label}
             </a>
@@ -61,18 +54,14 @@ export function Nav() {
           href="https://wa.me/5549991540421"
           target="_blank"
           rel="noreferrer"
-          className={`hidden md:inline-flex items-center gap-2 text-xs tracking-[0.2em] uppercase px-5 py-3 transition-all duration-500 ease-luxe ${
-            scrolled
-              ? "bg-foreground text-background hover:bg-foreground/90"
-              : "bg-background text-foreground hover:bg-gold"
-          }`}
+          className="hidden md:inline-flex items-center gap-2 text-xs tracking-[0.2em] uppercase px-5 py-3 bg-foreground text-background hover:bg-foreground/90 transition-all duration-500 ease-luxe"
         >
           Atendimento
         </a>
 
         <button
           onClick={() => setOpen((s) => !s)}
-          className={`md:hidden p-2 -mr-2 ${scrolled ? "text-foreground" : "text-background"}`}
+          className="md:hidden p-2 -mr-2 text-foreground"
           aria-label="Menu"
         >
           {open ? <X className="size-5" /> : <Menu className="size-5" />}
@@ -104,13 +93,6 @@ export function Nav() {
           >
             Falar no WhatsApp
           </a>
-          <Link
-            to="/admin/login"
-            onClick={() => setOpen(false)}
-            className="mt-2 text-center text-[10px] tracking-luxe uppercase text-muted-foreground py-2"
-          >
-            Acesso administrativo
-          </Link>
         </nav>
       </div>
     </header>

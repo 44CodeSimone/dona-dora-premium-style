@@ -5,12 +5,12 @@ import { Marquee } from "@/components/site/Marquee";
 import { Sobre } from "@/components/site/Sobre";
 import { Categorias } from "@/components/site/Categorias";
 import { Produtos } from "@/components/site/Produtos";
-import { Dora } from "@/components/site/Dora";
+import { Nexa } from "@/components/site/Nexa";
 import { Instagram } from "@/components/site/Instagram";
 import { Depoimentos } from "@/components/site/Depoimentos";
 import { Contato } from "@/components/site/Contato";
 import { Footer } from "@/components/site/Footer";
-import { DoraFloat } from "@/components/site/DoraFloat";
+import { WhatsappFloat } from "@/components/site/WhatsappFloat";
 
 export const Route = createFileRoute("/")({
   head: () => ({

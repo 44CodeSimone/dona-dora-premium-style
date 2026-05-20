@@ -12,7 +12,7 @@ const cats = [
 
 export function Categorias() {
   return (
-    <section id="categorias" className="py-24 md:py-32 bg-muted">
+    <section id="categorias" className="py-24 md:py-32 bg-nude/60">
       <div className="mx-auto max-w-7xl px-6 md:px-10">
         <div className="flex flex-col md:flex-row md:items-end md:justify-between gap-6 mb-12 md:mb-16">
           <div>
@@ -46,9 +46,9 @@ export function Categorias() {
                 loading="lazy"
                 width={1024}
                 height={1280}
-                className="absolute inset-0 size-full object-cover grayscale-[15%]"
+                className="absolute inset-0 size-full object-cover"
               />
-              <div className="absolute inset-0 bg-gradient-to-t from-ink/90 via-ink/30 to-transparent" />
+              <div className="absolute inset-0 bg-gradient-to-t from-ink/85 via-ink/20 to-transparent" />
               <div className="absolute inset-0 p-6 md:p-8 flex flex-col justify-end text-background">
                 <div className="text-[10px] tracking-luxe uppercase text-gold-soft mb-2">
                   Coleção

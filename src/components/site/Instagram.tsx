@@ -8,7 +8,7 @@ const tiles = [fem, masc, acc, joias, fem, masc];
 
 export function Instagram() {
   return (
-    <section className="py-24 md:py-32 bg-muted">
+    <section className="py-24 md:py-32 bg-nude/50">
       <div className="mx-auto max-w-7xl px-6 md:px-10">
         <div className="flex flex-col md:flex-row md:items-end md:justify-between gap-6 mb-10">
           <div>
@@ -47,7 +47,7 @@ export function Instagram() {
                 loading="lazy"
                 width={1024}
                 height={1024}
-                className="size-full object-cover grayscale"
+                className="size-full object-cover"
               />
               <div className="absolute inset-0 bg-ink/0 group-hover:bg-ink/40 transition-all duration-500 grid place-items-center">
                 <IGIcon className="size-6 text-background opacity-0 group-hover:opacity-100 transition-opacity duration-500" />
