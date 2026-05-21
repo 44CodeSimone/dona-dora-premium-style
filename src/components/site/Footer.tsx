@@ -29,7 +29,7 @@ export function Footer() {
               <li><a href="#sobre" className="gold-underline">Sobre</a></li>
               <li><a href="#categorias" className="gold-underline">Categorias</a></li>
               <li><a href="#colecao" className="gold-underline">Coleção</a></li>
-              <li><a href="#nexa" className="gold-underline">Nexa IA</a></li>
+              <li><a href="#vip" className="gold-underline">Grupo VIP</a></li>
               <li><a href="#contato" className="gold-underline">Contato</a></li>
             </ul>
           </div>
