@@ -52,12 +52,14 @@ export type Database = {
           budget: string | null
           conversation_id: string | null
           created_at: string
+          email: string | null
           emailed: boolean
           id: string
           interest: string | null
           message: string | null
           name: string | null
           product: string | null
+          read: boolean
           size: string | null
           source: string
           style: string | null
@@ -67,12 +69,14 @@ export type Database = {
           budget?: string | null
           conversation_id?: string | null
           created_at?: string
+          email?: string | null
           emailed?: boolean
           id?: string
           interest?: string | null
           message?: string | null
           name?: string | null
           product?: string | null
+          read?: boolean
           size?: string | null
           source?: string
           style?: string | null
@@ -82,12 +86,14 @@ export type Database = {
           budget?: string | null
           conversation_id?: string | null
           created_at?: string
+          email?: string | null
           emailed?: boolean
           id?: string
           interest?: string | null
           message?: string | null
           name?: string | null
           product?: string | null
+          read?: boolean
           size?: string | null
           source?: string
           style?: string | null
@@ -138,41 +144,59 @@ export type Database = {
       products: {
         Row: {
           active: boolean
+          alt_text: string | null
+          available: boolean
           category: string
+          colors: string[]
           created_at: string
           description: string | null
           featured: boolean
           id: string
           image_url: string | null
+          images: string[]
           name: string
           price: number | null
           promo: boolean
+          promo_price: number | null
+          sizes: string[]
           updated_at: string
         }
         Insert: {
           active?: boolean
+          alt_text?: string | null
+          available?: boolean
           category?: string
+          colors?: string[]
           created_at?: string
           description?: string | null
           featured?: boolean
           id?: string
           image_url?: string | null
+          images?: string[]
           name: string
           price?: number | null
           promo?: boolean
+          promo_price?: number | null
+          sizes?: string[]
           updated_at?: string
         }
         Update: {
           active?: boolean
+          alt_text?: string | null
+          available?: boolean
           category?: string
+          colors?: string[]
           created_at?: string
           description?: string | null
           featured?: boolean
           id?: string
           image_url?: string | null
+          images?: string[]
           name?: string
           price?: number | null
           promo?: boolean
+          promo_price?: number | null
+          sizes?: string[]
           updated_at?: string
         }
         Relationships: []
@@ -200,38 +224,101 @@ export type Database = {
       }
       site_settings: {
         Row: {
+          accent_color: string
+          address: string
+          bg_color: string
+          brand_name: string
           dora_system_prompt: string
+          dora_welcome_message: string
+          hero_cta_link: string
+          hero_cta_text: string
+          hero_image_url: string | null
           hero_subtitle: string
           hero_title: string
+          hours_saturday: string
+          hours_weekday: string
           id: number
+          instagram_handle: string
+          instagram_url: string
           lead_email: string
+          logo_url: string | null
+          primary_color: string
           seo_description: string
+          seo_keywords: string
+          seo_og_image: string | null
           seo_title: string
           updated_at: string
+          vip_benefits: Json
+          vip_image_url: string | null
+          vip_link: string
+          vip_subtitle: string
+          vip_title: string
           whatsapp: string
           whatsapp_display: string
         }
         Insert: {
+          accent_color?: string
+          address?: string
+          bg_color?: string
+          brand_name?: string
           dora_system_prompt?: string
+          dora_welcome_message?: string
+          hero_cta_link?: string
+          hero_cta_text?: string
+          hero_image_url?: string | null
           hero_subtitle?: string
           hero_title?: string
+          hours_saturday?: string
+          hours_weekday?: string
           id?: number
+          instagram_handle?: string
+          instagram_url?: string
           lead_email?: string
+          logo_url?: string | null
+          primary_color?: string
           seo_description?: string
+          seo_keywords?: string
+          seo_og_image?: string | null
           seo_title?: string
           updated_at?: string
+          vip_benefits?: Json
+          vip_image_url?: string | null
+          vip_link?: string
+          vip_subtitle?: string
+          vip_title?: string
           whatsapp?: string
           whatsapp_display?: string
         }
         Update: {
+          accent_color?: string
+          address?: string
+          bg_color?: string
+          brand_name?: string
           dora_system_prompt?: string
+          dora_welcome_message?: string
+          hero_cta_link?: string
+          hero_cta_text?: string
+          hero_image_url?: string | null
           hero_subtitle?: string
           hero_title?: string
+          hours_saturday?: string
+          hours_weekday?: string
           id?: number
+          instagram_handle?: string
+          instagram_url?: string
           lead_email?: string
+          logo_url?: string | null
+          primary_color?: string
           seo_description?: string
+          seo_keywords?: string
+          seo_og_image?: string | null
           seo_title?: string
           updated_at?: string
+          vip_benefits?: Json
+          vip_image_url?: string | null
+          vip_link?: string
+          vip_subtitle?: string
+          vip_title?: string
           whatsapp?: string
           whatsapp_display?: string
         }
