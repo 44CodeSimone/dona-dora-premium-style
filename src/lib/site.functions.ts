@@ -2,6 +2,9 @@ import { createServerFn } from "@tanstack/react-start";
 import { supabaseAdmin } from "@/integrations/supabase/client.server";
 import { z } from "zod";
 
+// Fields that must NEVER be sent to the public browser
+const SENSITIVE_SETTINGS_FIELDS = ["dora_system_prompt", "lead_email"] as const;
+
 export const getSiteSettings = createServerFn({ method: "GET" }).handler(async () => {
   const { data, error } = await supabaseAdmin
     .from("site_settings")
@@ -9,7 +12,10 @@ export const getSiteSettings = createServerFn({ method: "GET" }).handler(async (
     .eq("id", 1)
     .single();
   if (error) throw new Error(error.message);
-  return data;
+  // Strip sensitive fields before returning to public callers
+  const safe = { ...data } as Record<string, unknown>;
+  for (const k of SENSITIVE_SETTINGS_FIELDS) delete safe[k];
+  return safe;
 });
 
 export const getPublicProducts = createServerFn({ method: "GET" })
