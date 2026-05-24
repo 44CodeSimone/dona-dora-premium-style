@@ -45,7 +45,7 @@ import {
   markLeadRead,
   uploadImage,
 } from "@/lib/admin.functions";
-import { getSiteSettings } from "@/lib/site.functions";
+import { getAdminSiteSettings } from "@/lib/admin.functions";
 import { toast } from "sonner";
 
 export const Route = createFileRoute("/admin")({
@@ -281,7 +281,7 @@ function TagInput({
 // ============ IDENTIDADE ============
 function IdentityTab() {
   const qc = useQueryClient();
-  const get = useServerFn(getSiteSettings);
+  const get = useServerFn(getAdminSiteSettings);
   const save = useServerFn(updateSiteSettings);
   const { data, isLoading } = useQuery({ queryKey: ["settings"], queryFn: () => get() });
   const [form, setForm] = useState<any>(null);
@@ -349,7 +349,7 @@ function IdentityTab() {
 // ============ VIP ============
 function VipTab() {
   const qc = useQueryClient();
-  const get = useServerFn(getSiteSettings);
+  const get = useServerFn(getAdminSiteSettings);
   const save = useServerFn(updateSiteSettings);
   const { data } = useQuery({ queryKey: ["settings"], queryFn: () => get() });
   const [form, setForm] = useState<any>(null);
@@ -393,7 +393,7 @@ function VipTab() {
 // ============ SEO ============
 function SeoTab() {
   const qc = useQueryClient();
-  const get = useServerFn(getSiteSettings);
+  const get = useServerFn(getAdminSiteSettings);
   const save = useServerFn(updateSiteSettings);
   const { data } = useQuery({ queryKey: ["settings"], queryFn: () => get() });
   const [form, setForm] = useState<any>(null);
@@ -430,7 +430,7 @@ function SeoTab() {
 // ============ DORA IA ============
 function DoraTab() {
   const qc = useQueryClient();
-  const get = useServerFn(getSiteSettings);
+  const get = useServerFn(getAdminSiteSettings);
   const save = useServerFn(updateSiteSettings);
   const { data } = useQuery({ queryKey: ["settings"], queryFn: () => get() });
   const [form, setForm] = useState<any>(null);
