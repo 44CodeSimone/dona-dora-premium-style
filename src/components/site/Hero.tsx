@@ -58,11 +58,11 @@ export function Hero() {
               <ArrowRight className="size-4 transition-transform duration-500 ease-luxe group-hover:translate-x-1" />
             </a>
             <a
-              href="#nexa"
+              href="#vip"
               className="group inline-flex items-center justify-center gap-3 px-7 py-4 border border-background/30 text-background text-xs tracking-[0.22em] uppercase hover:border-gold hover:text-gold transition-all duration-500 ease-luxe"
             >
               <Sparkles className="size-4" />
-              Falar com a Nexa
+              Grupo VIP Dona Dora
             </a>
           </div>
         </div>

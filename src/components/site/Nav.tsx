@@ -2,10 +2,10 @@ import { useEffect, useState } from "react";
 import { Menu, X } from "lucide-react";
 
 const links = [
-  { href: "#sobre", label: "Sobre" },
+  { href: "#diferenciais", label: "Diferenciais" },
   { href: "#categorias", label: "Categorias" },
   { href: "#colecao", label: "Coleção" },
-  { href: "#nexa", label: "Nexa IA" },
+  { href: "#vip", label: "Grupo VIP" },
   { href: "#contato", label: "Contato" },
 ];
 
