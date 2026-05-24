@@ -23,6 +23,8 @@ export const checkIsAdmin = createServerFn({ method: "GET" })
     } catch {
       return { isAdmin: false };
     }
+  });
+
 
 // Admin-only: returns full site_settings including sensitive fields (dora_system_prompt, lead_email)
 export const getAdminSiteSettings = createServerFn({ method: "GET" })
