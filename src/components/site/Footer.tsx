@@ -26,7 +26,7 @@ export function Footer() {
           <div className="md:col-span-3">
             <h4 className="text-[11px] tracking-luxe uppercase text-gold-soft mb-5">Navegação</h4>
             <ul className="space-y-3 text-sm text-background/80">
-              <li><a href="#sobre" className="gold-underline">Sobre</a></li>
+              <li><a href="#diferenciais" className="gold-underline">Diferenciais</a></li>
               <li><a href="#categorias" className="gold-underline">Categorias</a></li>
               <li><a href="#colecao" className="gold-underline">Coleção</a></li>
               <li><a href="#vip" className="gold-underline">Grupo VIP</a></li>
