@@ -15,6 +15,63 @@ const chatSchema = z.object({
     .max(40),
 });
 
+function formatBRL(v: number | null | undefined) {
+  if (v == null) return "—";
+  return new Intl.NumberFormat("pt-BR", { style: "currency", currency: "BRL" }).format(Number(v));
+}
+
+async function buildCatalogContext() {
+  const [{ data: products }, { data: brands }, { data: settings }] = await Promise.all([
+    supabaseAdmin
+      .from("products")
+      .select("name,category,brand,price,promo_price,pix_price,installments,stock,sizes,colors,description")
+      .eq("active", true)
+      .order("featured", { ascending: false })
+      .limit(40),
+    supabaseAdmin.from("brands").select("name,description").eq("active", true).limit(30),
+    supabaseAdmin
+      .from("site_settings")
+      .select("payment_methods,policies,whatsapp_display,address,hours_weekday,hours_saturday")
+      .eq("id", 1)
+      .single(),
+  ]);
+
+  const productLines = (products ?? []).map((p) => {
+    const price = p.promo_price ? `${formatBRL(p.promo_price)} (promo, de ${formatBRL(p.price)})` : formatBRL(p.price);
+    const pix = p.pix_price ? `, Pix ${formatBRL(p.pix_price)}` : "";
+    const parc = p.installments && p.installments > 1 ? `, até ${p.installments}x` : "";
+    const tam = (p.sizes ?? []).length ? `, tamanhos: ${(p.sizes as string[]).join("/")}` : "";
+    const cor = (p.colors ?? []).length ? `, cores: ${(p.colors as string[]).join("/")}` : "";
+    const stock = p.stock != null ? (p.stock > 0 ? `, em estoque` : `, sem estoque`) : "";
+    const brand = p.brand ? ` [${p.brand}]` : "";
+    return `• ${p.name}${brand} (${p.category}) — ${price}${pix}${parc}${tam}${cor}${stock}`;
+  });
+
+  const brandLines = (brands ?? []).map((b) => `• ${b.name}${b.description ? ` — ${b.description}` : ""}`);
+  const payments = Array.isArray(settings?.payment_methods) ? (settings!.payment_methods as string[]).join(", ") : "";
+  const policies = settings?.policies ?? {};
+
+  return `
+CATÁLOGO ATUAL (${productLines.length} produtos ativos):
+${productLines.join("\n") || "(catálogo vazio no momento)"}
+
+MARCAS PARCEIRAS:
+${brandLines.join("\n") || "(sem marcas cadastradas)"}
+
+FORMAS DE PAGAMENTO: ${payments || "consultar"}
+TROCAS: ${(policies as any)?.trocas ?? "—"}
+ENVIO: ${(policies as any)?.envio ?? "—"}
+ENDEREÇO: ${settings?.address ?? "—"} · ${settings?.hours_weekday ?? ""} · ${settings?.hours_saturday ?? ""}
+WHATSAPP DA LOJA: ${settings?.whatsapp_display ?? "(49) 99121-0083"}
+
+REGRAS OBRIGATÓRIAS:
+1. Use SOMENTE informações do catálogo acima. Nunca invente produto, preço, marca, tamanho ou estoque.
+2. Se o cliente perguntar algo que NÃO está no catálogo, responda EXATAMENTE: "Não encontrei essa informação no catálogo no momento, mas posso te encaminhar para o atendimento pelo WhatsApp." e ofereça o link.
+3. Sempre que possível, recomende 1 a 3 produtos do catálogo que combinem com o pedido.
+4. Mantenha tom elegante, acolhedor e direto. Respostas curtas.
+`.trim();
+}
+
 export const doraChat = createServerFn({ method: "POST" })
   .inputValidator((input) => chatSchema.parse(input))
   .handler(async ({ data }) => {
@@ -27,9 +84,12 @@ export const doraChat = createServerFn({ method: "POST" })
       .eq("id", 1)
       .single();
 
-    const systemPrompt =
+    const basePrompt =
       settings?.dora_system_prompt ??
       "Você é Dora, consultora de moda da boutique Dona Dora em Urubici/SC. Elegante e acolhedora.";
+
+    const catalog = await buildCatalogContext();
+    const systemPrompt = `${basePrompt}\n\n${catalog}`;
 
     const res = await fetch("https://ai.gateway.lovable.dev/v1/chat/completions", {
       method: "POST",
@@ -46,12 +106,13 @@ export const doraChat = createServerFn({ method: "POST" })
     if (!res.ok) {
       const text = await res.text();
       console.error("AI gateway error:", res.status, text);
+      if (res.status === 429) return { reply: "Estou com muitas conversas agora. Tente em alguns instantes 💛" };
+      if (res.status === 402) return { reply: "Atendimento temporariamente indisponível. Fale conosco no WhatsApp (49) 99121-0083." };
       throw new Error(`AI error ${res.status}`);
     }
     const json = await res.json();
     const reply: string = json.choices?.[0]?.message?.content ?? "Desculpe, tente novamente.";
 
-    // Persist conversation + messages (best effort)
     try {
       let convId: string | null = null;
       const { data: existing } = await supabaseAdmin

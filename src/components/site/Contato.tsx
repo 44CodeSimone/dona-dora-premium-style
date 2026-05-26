@@ -9,7 +9,7 @@ export function Contato() {
     const text = encodeURIComponent(
       `Olá Dona Dora!\n\nNome: ${form.nome}\nWhatsApp: ${form.whats}\nInteresse: ${form.interesse}\n\n${form.msg}`,
     );
-    window.open(`https://wa.me/5549991540421?text=${text}`, "_blank");
+    window.open(`https://wa.me/5549991210083?text=${text}`, "_blank");
   };
 
   return (
@@ -63,12 +63,12 @@ export function Contato() {
                   WhatsApp
                 </div>
                 <a
-                  href="https://wa.me/5549991540421"
+                  href="https://wa.me/5549991210083"
                   target="_blank"
                   rel="noreferrer"
                   className="text-sm gold-underline"
                 >
-                  (49) 99154-0421
+                  (49) 99121-0083
                 </a>
               </div>
             </div>

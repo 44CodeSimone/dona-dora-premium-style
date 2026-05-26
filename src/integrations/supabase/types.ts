@@ -14,6 +14,45 @@ export type Database = {
   }
   public: {
     Tables: {
+      brands: {
+        Row: {
+          active: boolean
+          created_at: string
+          description: string | null
+          featured: boolean
+          id: string
+          logo_url: string | null
+          name: string
+          order_index: number
+          slug: string
+          updated_at: string
+        }
+        Insert: {
+          active?: boolean
+          created_at?: string
+          description?: string | null
+          featured?: boolean
+          id?: string
+          logo_url?: string | null
+          name: string
+          order_index?: number
+          slug: string
+          updated_at?: string
+        }
+        Update: {
+          active?: boolean
+          created_at?: string
+          description?: string | null
+          featured?: boolean
+          id?: string
+          logo_url?: string | null
+          name?: string
+          order_index?: number
+          slug?: string
+          updated_at?: string
+        }
+        Relationships: []
+      }
       conversations: {
         Row: {
           created_at: string
@@ -141,11 +180,51 @@ export type Database = {
           },
         ]
       }
+      orders: {
+        Row: {
+          created_at: string
+          customer_email: string | null
+          customer_name: string
+          customer_whatsapp: string
+          id: string
+          items: Json
+          notes: string | null
+          status: string
+          subtotal: number
+          updated_at: string
+        }
+        Insert: {
+          created_at?: string
+          customer_email?: string | null
+          customer_name: string
+          customer_whatsapp: string
+          id?: string
+          items?: Json
+          notes?: string | null
+          status?: string
+          subtotal?: number
+          updated_at?: string
+        }
+        Update: {
+          created_at?: string
+          customer_email?: string | null
+          customer_name?: string
+          customer_whatsapp?: string
+          id?: string
+          items?: Json
+          notes?: string | null
+          status?: string
+          subtotal?: number
+          updated_at?: string
+        }
+        Relationships: []
+      }
       products: {
         Row: {
           active: boolean
           alt_text: string | null
           available: boolean
+          brand: string | null
           category: string
           colors: string[]
           created_at: string
@@ -154,17 +233,22 @@ export type Database = {
           id: string
           image_url: string | null
           images: string[]
+          installments: number
           name: string
+          pix_price: number | null
           price: number | null
           promo: boolean
           promo_price: number | null
           sizes: string[]
+          slug: string | null
+          stock: number
           updated_at: string
         }
         Insert: {
           active?: boolean
           alt_text?: string | null
           available?: boolean
+          brand?: string | null
           category?: string
           colors?: string[]
           created_at?: string
@@ -173,17 +257,22 @@ export type Database = {
           id?: string
           image_url?: string | null
           images?: string[]
+          installments?: number
           name: string
+          pix_price?: number | null
           price?: number | null
           promo?: boolean
           promo_price?: number | null
           sizes?: string[]
+          slug?: string | null
+          stock?: number
           updated_at?: string
         }
         Update: {
           active?: boolean
           alt_text?: string | null
           available?: boolean
+          brand?: string | null
           category?: string
           colors?: string[]
           created_at?: string
@@ -192,11 +281,15 @@ export type Database = {
           id?: string
           image_url?: string | null
           images?: string[]
+          installments?: number
           name?: string
+          pix_price?: number | null
           price?: number | null
           promo?: boolean
           promo_price?: number | null
           sizes?: string[]
+          slug?: string | null
+          stock?: number
           updated_at?: string
         }
         Relationships: []
@@ -226,10 +319,12 @@ export type Database = {
         Row: {
           accent_color: string
           address: string
+          benefits: Json
           bg_color: string
           brand_name: string
           dora_system_prompt: string
           dora_welcome_message: string
+          facebook_url: string | null
           hero_cta_link: string
           hero_cta_text: string
           hero_image_url: string | null
@@ -242,11 +337,15 @@ export type Database = {
           instagram_url: string
           lead_email: string
           logo_url: string | null
+          payment_methods: Json
+          policies: Json
           primary_color: string
           seo_description: string
           seo_keywords: string
           seo_og_image: string | null
           seo_title: string
+          tiktok_url: string | null
+          topbar_text: string
           updated_at: string
           vip_benefits: Json
           vip_image_url: string | null
@@ -259,10 +358,12 @@ export type Database = {
         Insert: {
           accent_color?: string
           address?: string
+          benefits?: Json
           bg_color?: string
           brand_name?: string
           dora_system_prompt?: string
           dora_welcome_message?: string
+          facebook_url?: string | null
           hero_cta_link?: string
           hero_cta_text?: string
           hero_image_url?: string | null
@@ -275,11 +376,15 @@ export type Database = {
           instagram_url?: string
           lead_email?: string
           logo_url?: string | null
+          payment_methods?: Json
+          policies?: Json
           primary_color?: string
           seo_description?: string
           seo_keywords?: string
           seo_og_image?: string | null
           seo_title?: string
+          tiktok_url?: string | null
+          topbar_text?: string
           updated_at?: string
           vip_benefits?: Json
           vip_image_url?: string | null
@@ -292,10 +397,12 @@ export type Database = {
         Update: {
           accent_color?: string
           address?: string
+          benefits?: Json
           bg_color?: string
           brand_name?: string
           dora_system_prompt?: string
           dora_welcome_message?: string
+          facebook_url?: string | null
           hero_cta_link?: string
           hero_cta_text?: string
           hero_image_url?: string | null
@@ -308,11 +415,15 @@ export type Database = {
           instagram_url?: string
           lead_email?: string
           logo_url?: string | null
+          payment_methods?: Json
+          policies?: Json
           primary_color?: string
           seo_description?: string
           seo_keywords?: string
           seo_og_image?: string | null
           seo_title?: string
+          tiktok_url?: string | null
+          topbar_text?: string
           updated_at?: string
           vip_benefits?: Json
           vip_image_url?: string | null
