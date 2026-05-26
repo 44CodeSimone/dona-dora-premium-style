@@ -44,6 +44,11 @@ import {
   listLeads,
   markLeadRead,
   uploadImage,
+  listAllBrands,
+  upsertBrand,
+  deleteBrand,
+  listOrders,
+  updateOrderStatus,
 } from "@/lib/admin.functions";
 import { getAdminSiteSettings } from "@/lib/admin.functions";
 import { toast } from "sonner";
@@ -54,6 +59,7 @@ export const Route = createFileRoute("/admin")({
 });
 
 const CATEGORIES = [
+  { v: "lancamentos", l: "Lançamentos" },
   { v: "feminina", l: "Moda Feminina" },
   { v: "masculina", l: "Moda Masculina" },
   { v: "acessorios", l: "Acessórios" },
@@ -61,6 +67,9 @@ const CATEGORIES = [
   { v: "oculos", l: "Óculos" },
   { v: "bones", l: "Bonés" },
   { v: "presentes", l: "Presentes" },
+  { v: "outlet", l: "Outlet" },
+  { v: "souvenirs", l: "Souvenirs" },
+  { v: "outros", l: "Outros" },
   { v: "promocoes", l: "Promoções" },
 ] as const;
 
@@ -124,6 +133,8 @@ function AdminPage() {
         <Tabs defaultValue="produtos">
           <TabsList className="flex flex-wrap h-auto">
             <TabsTrigger value="produtos">Produtos</TabsTrigger>
+            <TabsTrigger value="marcas">Marcas</TabsTrigger>
+            <TabsTrigger value="pedidos">Pedidos</TabsTrigger>
             <TabsTrigger value="identidade">Identidade</TabsTrigger>
             <TabsTrigger value="vip">Grupo VIP</TabsTrigger>
             <TabsTrigger value="leads">Leads</TabsTrigger>
@@ -131,6 +142,8 @@ function AdminPage() {
             <TabsTrigger value="dora">Dora IA</TabsTrigger>
           </TabsList>
           <TabsContent value="produtos"><ProductsTab /></TabsContent>
+          <TabsContent value="marcas"><BrandsTab /></TabsContent>
+          <TabsContent value="pedidos"><OrdersTab /></TabsContent>
           <TabsContent value="identidade"><IdentityTab /></TabsContent>
           <TabsContent value="vip"><VipTab /></TabsContent>
           <TabsContent value="leads"><LeadsTab /></TabsContent>
@@ -584,6 +597,10 @@ function ProductDialog({ open, onOpenChange, initial }: { open: boolean; onOpenC
             </Field>
             <Field label="Preço (R$)"><Input type="number" step="0.01" value={f.price ?? ""} onChange={(e) => set("price", e.target.value ? parseFloat(e.target.value) : null)} /></Field>
             <Field label="Preço promo (R$)"><Input type="number" step="0.01" value={f.promo_price ?? ""} onChange={(e) => set("promo_price", e.target.value ? parseFloat(e.target.value) : null)} /></Field>
+            <Field label="Preço no Pix (R$)"><Input type="number" step="0.01" value={f.pix_price ?? ""} onChange={(e) => set("pix_price", e.target.value ? parseFloat(e.target.value) : null)} /></Field>
+            <Field label="Parcelas s/ juros"><Input type="number" min={1} max={24} value={f.installments ?? 1} onChange={(e) => set("installments", parseInt(e.target.value || "1"))} /></Field>
+            <Field label="Estoque"><Input type="number" min={0} value={f.stock ?? 0} onChange={(e) => set("stock", parseInt(e.target.value || "0"))} /></Field>
+            <Field label="Marca"><Input value={f.brand ?? ""} onChange={(e) => set("brand", e.target.value || null)} /></Field>
           </div>
           <Field label="Tamanhos"><TagInput value={f.sizes ?? []} onChange={(v) => set("sizes", v)} placeholder="P, M, G..." /></Field>
           <Field label="Cores"><TagInput value={f.colors ?? []} onChange={(v) => set("colors", v)} placeholder="Preto, Bege..." /></Field>
@@ -625,7 +642,8 @@ function ProductDialog({ open, onOpenChange, initial }: { open: boolean; onOpenC
 
 function emptyProduct() {
   return {
-    name: "", description: "", category: "feminina", price: null, promo_price: null,
+    name: "", description: "", category: "feminina", price: null, promo_price: null, pix_price: null,
+    installments: 1, stock: 0, brand: "",
     image_url: null, images: [], sizes: [], colors: [],
     featured: false, promo: false, active: true, available: true, alt_text: "",
   };
