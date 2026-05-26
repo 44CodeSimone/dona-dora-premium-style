@@ -35,7 +35,7 @@ export function Categorias() {
           {cats.map((c) => (
             <a
               key={c.title}
-              href="https://wa.me/5549991540421"
+              href="#colecao"
               target="_blank"
               rel="noreferrer"
               className={`group relative img-zoom block overflow-hidden bg-foreground/5 ${c.span} aspect-[4/5] md:aspect-auto`}

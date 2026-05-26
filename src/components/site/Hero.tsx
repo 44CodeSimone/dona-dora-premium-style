@@ -49,7 +49,7 @@ export function Hero() {
             style={{ animationDelay: "0.5s" }}
           >
             <a
-              href="https://wa.me/5549991540421"
+              href="https://wa.me/5549991210083"
               target="_blank"
               rel="noreferrer"
               className="group inline-flex items-center justify-center gap-3 px-7 py-4 bg-background text-foreground text-xs tracking-[0.22em] uppercase hover:bg-gold transition-all duration-500 ease-luxe"

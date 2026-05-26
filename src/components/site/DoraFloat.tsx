@@ -25,7 +25,7 @@ export function DoraFloat() {
   const [phase, setPhase] = useState<"chat" | "form" | "done">("chat");
 
   const welcome = settings?.dora_welcome_message ?? "Oi! Eu sou a Dora 😊 Posso te ajudar a encontrar a peça perfeita. Me conta: o que você procura hoje?";
-  const whatsapp = settings?.whatsapp ?? "5549991540421";
+  const whatsapp = settings?.whatsapp ?? "5549991210083";
 
   const [messages, setMessages] = useState<Msg[]>([{ role: "assistant", content: welcome }]);
   const [draft, setDraft] = useState("");

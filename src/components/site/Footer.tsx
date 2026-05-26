@@ -14,7 +14,7 @@ export function Footer() {
               Curadoria, elegância e estilo.
             </p>
             <div className="mt-8 flex items-center gap-3">
-              <Social href="https://wa.me/5549991540421" label="WhatsApp">
+              <Social href="https://wa.me/5549991210083" label="WhatsApp">
                 <MessageCircle className="size-4" />
               </Social>
               <Social href="https://instagram.com" label="Instagram">
@@ -48,12 +48,12 @@ export function Footer() {
                 <span className="text-background/60">Sábado</span> · 09h às 17h
               </div>
               <a
-                href="https://wa.me/5549991540421"
+                href="https://wa.me/5549991210083"
                 target="_blank"
                 rel="noreferrer"
                 className="inline-block pt-1 gold-underline"
               >
-                (49) 99154-0421
+                (49) 99121-0083
               </a>
             </div>
           </div>
