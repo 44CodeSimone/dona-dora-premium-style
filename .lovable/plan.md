@@ -1,99 +1,91 @@
-# Plano — DONA DORA: Painel Admin Real + Refinos
+# Plano — Dona Dora E-commerce Administrável
 
-Não recriar do zero. Aproveitar o que já existe (tabelas `products`, `leads`, `site_settings`, `user_roles`, `profiles`, função `has_role`) e estender.
+Adaptar o site atual (sem recriar) para virar uma loja online completa, com catálogo real vindo do banco, carrinho, checkout via WhatsApp, painel admin expandido e IA Dora consultando o catálogo.
 
-## 1. Banco de dados (migração única)
+## 1. Banco de dados (migration)
 
-**Estender `site_settings`** com colunas para tudo que será administrável:
-- `logo_url`, `brand_name`, `primary_color`, `accent_color`, `bg_color`
-- `hero_image_url`, `hero_cta_text`, `hero_cta_link`
-- `instagram_url`, `instagram_handle`
-- `address`, `hours_weekday`, `hours_saturday`
-- `vip_title`, `vip_subtitle`, `vip_benefits` (jsonb array), `vip_link`, `vip_image_url`
-- `seo_keywords`, `seo_og_image`
-- `dora_welcome_message`
+Expandir o schema atual sem quebrar dados existentes.
 
-**Estender `products`** com:
-- `promo_price` (numeric), `sizes` (text[]), `colors` (text[]), `images` (text[]), `available` (bool), `alt_text` (text)
-- Atualizar enum/check de `category` para aceitar: feminina, masculina, acessorios, joias, oculos, bones, presentes, promocoes
+**Tabela `products`** (alterar):
+- `stock` (int, default 0)
+- `pix_price` (numeric, nullable) — preço no Pix
+- `installments` (int, default 1) — nº de parcelas sem juros
+- `brand` (text, nullable)
+- `slug` (text, unique)
+- Expandir enum `category` para incluir: `lancamentos`, `outlet`, `souvenirs`, `outros` (manter os já existentes)
 
-**Estender `leads`** com:
-- `email`, `last_message`, ajustes em campos existentes
+**Nova tabela `brands`**: `id`, `name`, `slug`, `logo_url`, `description`, `featured`, `order_index`, `active`.
+RLS: leitura pública (active=true), escrita só admin.
 
-**Storage bucket** `dona-dora` (público, leitura pública, write apenas admin) para uploads de logo/banners/produtos.
+**Nova tabela `orders`** (pedidos via WhatsApp): `id`, `customer_name`, `customer_whatsapp`, `customer_email`, `items` (jsonb: [{product_id, name, size, color, qty, price}]), `subtotal`, `notes`, `status` ('novo'|'em_atendimento'|'concluido'|'cancelado'), `created_at`.
+RLS: INSERT público (anon), SELECT/UPDATE apenas admin.
 
-**Criar usuário admin** via SQL: `donadoraecommerce@gmail.com` / `1981@ju2512`, inserir em `auth.users` com `crypt()` + `email_confirmed_at`, criar profile e `user_roles` com role `admin`.
+**`site_settings`** (alterar):
+- Trocar default `whatsapp` para `5549991210083` e `whatsapp_display` para `(49) 99121-0083`
+- Adicionar: `topbar_text`, `payment_methods` (jsonb array), `policies` (jsonb: trocas, envio, privacidade), `benefits` (jsonb: 4 cards), `facebook_url`, `tiktok_url`
+- UPDATE existente para limpar 5549991540421 → 5549991210083
 
-**RLS**: produtos públicos já leem ativos; admin escreve via `has_role`. Leads: insert público (anônimo cria lead via chat Dora), select/update só admin. Site_settings: select público, update só admin.
+## 2. Painel admin (`/admin`)
 
-## 2. Autenticação
+Adicionar abas ao painel existente:
+- **Produtos** (expandir form): stock, pix_price, installments, brand (select), slug auto, upload múltiplo já existe
+- **Marcas**: CRUD com upload de logo
+- **Pedidos**: lista com filtro por status, marcar como atendido
+- **Configurações** (expandir): topbar, benefícios (4), formas de pagamento, políticas, redes sociais extras
+- Tudo via `createServerFn` com `requireSupabaseAuth` + `assertAdmin`
 
-- Página `/login` — email + senha (Supabase auth). Após login, redireciona para `/admin`.
-- Listener `onAuthStateChange` no root para invalidar cache.
-- Rota `_admin` (pathless layout) com `beforeLoad`: verifica sessão + role `admin` via server fn; senão redireciona para `/login`.
+## 3. Site público — adaptações
 
-## 3. Painel `/admin`
+**Topbar nova** (acima da Nav): texto editável "Faça seu pedido — enviamos para todo o Brasil" + busca.
 
-Layout sidebar com seções:
+**Nav**: adicionar item "Marcas", manter Categorias/Coleção/VIP/Contato.
 
-1. **Dashboard** — contagem de produtos, leads não lidos, últimos leads.
-2. **Identidade** — formulário que edita `site_settings`: logo (upload), nome, cores (color picker), hero, contatos, endereço, horários, e-mail leads.
-3. **Produtos** — tabela + modal:
-   - Listar com filtros (categoria, ativo, destaque, promo)
-   - Criar/editar: nome, descrição, preço, preço promo, categoria (select com as 8 categorias), tamanhos (tags), cores (tags), múltiplas imagens (upload + URL), destaque, promoção, ativo, alt text
-   - Excluir / ativar-desativar
-4. **Grupo VIP** — edita campos `vip_*` do `site_settings`, incluindo upload de imagem e benefícios (lista editável).
-5. **Leads** — tabela com todos os campos + data; marcar como lido; exportar CSV; ver mensagem completa.
-6. **SEO** — edita `seo_title`, `seo_description`, `seo_keywords`, `seo_og_image`.
-7. **Dora IA** — edita `dora_system_prompt` e `dora_welcome_message`.
+**Produtos.tsx** (já carrega do banco): adicionar exibição de:
+- preço Pix ("R$ X no Pix")
+- parcelamento ("ou Yx de R$ Z sem juros")
+- badge de estoque baixo / esgotado
+- botão "Adicionar ao carrinho" (além do WhatsApp direto)
+- novas categorias nos filtros
 
-Toda mutação usa `createServerFn` com `requireSupabaseAuth` + checagem `has_role('admin')`.
+**Nova seção `Marcas`**: grid de logos administráveis (componente novo, carrega de `brands`).
 
-## 4. Site público — refatoração
+**Nova seção `Beneficios`** (4 cards editáveis): envio nacional, SSL, promoções, garantia.
 
-**Renomear Nexa → Dora** em todo lugar.
+**Carrinho** (novo):
+- Context/Zustand-style hook `useCart` com persistência em `localStorage`
+- Drawer lateral (Sheet shadcn) acessível pelo ícone no header
+- Itens: imagem, nome, tamanho/cor, qty, subtotal
+- Botão "Finalizar pedido" → modal com nome + observações → grava em `orders` + abre WhatsApp com resumo formatado
 
-**Remover**: seção "Desde/Urubici/Curadoria/Atendimento/Estilo" (Sobre atual) + WhatsApp float atual + botão "Falar com a Nexa".
+## 4. IA Dora conectada ao catálogo
 
-**Criar**:
-- Nova seção premium "Diferenciais" com 4 cards: Moda feminina e masculina · Curadoria de peças · Atendimento próximo · Grupo VIP Dona Dora.
-- Seção **Grupo VIP** com banner, benefícios e CTA para o link do grupo (vem do `site_settings`).
-- **Botão flutuante "Falar com a Dora"** — abre drawer/dialog com chat real:
-  - Mensagens trocadas com Dora via server fn → AI Gateway (`google/gemini-2.5-flash`) usando `dora_system_prompt` do `site_settings`
-  - Coleta: nome, WhatsApp, interesse, produto, tamanho, faixa de preço, mensagem (formulário inline + extração da conversa)
-  - Salva `conversation` + `messages` + cria `lead` no banco
-  - Ao final mostra botão "Continuar no WhatsApp" → wa.me/5549991540421 com mensagem pré-preenchida
+Modificar `src/lib/dora.functions.ts`:
+- Antes de chamar o modelo, buscar até 30 produtos ativos + marcas do banco
+- Injetar como contexto no system prompt: lista resumida (nome, categoria, marca, preço, pix, estoque, tamanhos, cores)
+- Reforçar regra: "Se não encontrar no catálogo, responda exatamente: 'Não encontrei essa informação no catálogo no momento, mas posso te encaminhar para o atendimento pelo WhatsApp.' e ofereça o botão"
+- Botão "Continuar no WhatsApp" no `DoraFloat` apontando para `5549991210083`
 
-**Produtos no site público** — buscar de `products` (ativos) via server fn pública, não mais hardcoded. Filtrar por destaque na home; categorias ligam para `/categoria/$slug`.
+## 5. Limpeza de telefones antigos
 
-**Paleta**: ajustar `styles.css` para preto + branco + dourado discreto. Remover bege/rosa/marrom.
+Grep no projeto por `5549991540421` e `99154-0421` → substituir por `5549991210083` / `(49) 99121-0083` em todos os componentes (Nav, Hero, Footer, GrupoVip, Contato, etc.).
 
-**Dados dinâmicos**: todos os componentes (`Hero`, `Footer`, `Contato`, `Categorias`, `Produtos`, `GrupoVip`, `Dora`) consomem `site_settings` + `products` via loader/server fn pública.
+## 6. Responsividade & polimento
 
-## 5. Envio de leads por e-mail
+Verificar topbar, carrinho drawer, grid de marcas e cards de benefícios em mobile.
 
-Estrutura pronta: server fn `notifyLead` que será chamada após inserir lead. Implementação real exige configurar domínio de e-mail (Lovable Emails) — vou deixar o gancho funcionando salvando 100% no admin e marcar como TODO o envio efetivo após o domínio estar configurado. Aviso ao final.
-
-## 6. Responsividade & QA
-
-Revisar Hero, sidebar admin, tabelas (scroll horizontal mobile), drawer Dora, grids de produto em mobile/tablet/desktop.
+---
 
 ## Detalhes técnicos
 
-- **Server fns** em `src/lib/*.functions.ts`: `admin.functions.ts` (CRUD produtos, settings, leads), `public.functions.ts` (getSettings, getProducts), `dora.functions.ts` (chat streaming + criar lead).
-- **Upload de imagem**: server fn que recebe base64/file, valida MIME (jpg/png/webp), envia para Storage bucket `dona-dora` e retorna URL pública.
-- **Validação**: Zod em todas as server fns.
-- **UI admin**: shadcn (Table, Dialog, Form, Tabs, Card, Switch, Input, Textarea, Select).
-- **Chat Dora**: AI Gateway streaming via `async function*` no server fn (sem Edge Function).
+- **Stack**: TanStack Start + Supabase (Lovable Cloud), shadcn/ui já em uso.
+- **Carrinho**: hook `useCart` em `src/hooks/use-cart.ts` com `localStorage` (sem backend até checkout).
+- **Checkout WhatsApp**: server fn `createOrder` (anon insert em `orders`) retorna ID; client monta `https://wa.me/5549991210083?text=...` com resumo.
+- **Slugs**: gerados no upsert (slugify do nome + sufixo curto se colisão).
+- **Migrations**: 1 migration adicionando colunas, tabelas, RLS, e UPDATE para corrigir whatsapp e defaults.
+- **Sem pagamento online agora**: estrutura de `orders` já suporta adicionar `payment_status`/`payment_provider` depois sem refactor.
 
-## Ordem de execução
+## Fora de escopo desta entrega
 
-1. Migração (schema + bucket + admin user) — pedir aprovação
-2. Server fns (admin + public + dora)
-3. Auth (login + guard `_admin`)
-4. Páginas admin (dashboard, identidade, produtos, VIP, leads, SEO, Dora)
-5. Refator site público (paleta, Dora, GrupoVip, Diferenciais, dados dinâmicos)
-6. Float "Falar com a Dora" + chat
-7. QA responsivo
-
-Pronto para começar? Após aprovação, rodo a migração primeiro (vai pedir sua confirmação separada) e em seguida implemento tudo.
+- Páginas de produto individuais (`/produto/[slug]`) — fica para próxima iteração se solicitado.
+- Gateway de pagamento real (Stripe/Paddle/Pix) — estrutura preparada, ativação posterior.
+- Sistema de cupons.
