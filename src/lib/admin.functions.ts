@@ -72,8 +72,18 @@ const settingsSchema = z
     seo_og_image: z.string().url().nullable().optional(),
     dora_system_prompt: z.string().max(4000).optional(),
     dora_welcome_message: z.string().max(400).optional(),
+    dora_system_prompt: z.string().max(4000).optional(),
+    dora_welcome_message: z.string().max(400).optional(),
+    topbar_text: z.string().max(200).optional(),
+    facebook_url: z.string().url().nullable().optional(),
+    tiktok_url: z.string().url().nullable().optional(),
+    benefits: z.array(z.object({ title: z.string().max(80), desc: z.string().max(200) })).max(8).optional(),
+    payment_methods: z.array(z.string().max(40)).max(20).optional(),
+    policies: z.object({ trocas: z.string().max(400).optional(), envio: z.string().max(400).optional(), privacidade: z.string().max(400).optional() }).optional(),
+    virtual_tryon_enabled: z.boolean().optional(),
   })
   .strict();
+
 
 export const updateSiteSettings = createServerFn({ method: "POST" })
   .middleware([requireSupabaseAuth])
