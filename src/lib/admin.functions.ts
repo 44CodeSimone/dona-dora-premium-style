@@ -72,8 +72,6 @@ const settingsSchema = z
     seo_og_image: z.string().url().nullable().optional(),
     dora_system_prompt: z.string().max(4000).optional(),
     dora_welcome_message: z.string().max(400).optional(),
-    dora_system_prompt: z.string().max(4000).optional(),
-    dora_welcome_message: z.string().max(400).optional(),
     topbar_text: z.string().max(200).optional(),
     facebook_url: z.string().url().nullable().optional(),
     tiktok_url: z.string().url().nullable().optional(),
