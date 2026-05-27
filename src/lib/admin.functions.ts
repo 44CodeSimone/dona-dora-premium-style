@@ -72,8 +72,16 @@ const settingsSchema = z
     seo_og_image: z.string().url().nullable().optional(),
     dora_system_prompt: z.string().max(4000).optional(),
     dora_welcome_message: z.string().max(400).optional(),
+    topbar_text: z.string().max(200).optional(),
+    facebook_url: z.string().url().nullable().optional(),
+    tiktok_url: z.string().url().nullable().optional(),
+    benefits: z.array(z.object({ title: z.string().max(80), desc: z.string().max(200) })).max(8).optional(),
+    payment_methods: z.array(z.string().max(40)).max(20).optional(),
+    policies: z.object({ trocas: z.string().max(400).optional(), envio: z.string().max(400).optional(), privacidade: z.string().max(400).optional() }).optional(),
+    virtual_tryon_enabled: z.boolean().optional(),
   })
   .strict();
+
 
 export const updateSiteSettings = createServerFn({ method: "POST" })
   .middleware([requireSupabaseAuth])
@@ -217,3 +225,107 @@ export const uploadImage = createServerFn({ method: "POST" })
     const { data: pub } = supabaseAdmin.storage.from("dona-dora").getPublicUrl(path);
     return { url: pub.publicUrl };
   });
+
+// ------ BRANDS ------
+const brandSchema = z.object({
+  id: z.string().uuid().optional(),
+  name: z.string().min(1).max(80),
+  slug: z.string().min(1).max(80).regex(/^[a-z0-9-]+$/),
+  logo_url: z.string().url().nullable().optional(),
+  description: z.string().max(500).nullable().optional(),
+  featured: z.boolean().default(false),
+  order_index: z.number().int().min(0).default(0),
+  active: z.boolean().default(true),
+});
+
+export const listAllBrands = createServerFn({ method: "GET" })
+  .middleware([requireSupabaseAuth])
+  .handler(async ({ context }) => {
+    await assertAdmin(context.userId);
+    const { data, error } = await supabaseAdmin
+      .from("brands")
+      .select("*")
+      .order("order_index", { ascending: true });
+    if (error) throw new Error(error.message);
+    return data;
+  });
+
+export const upsertBrand = createServerFn({ method: "POST" })
+  .middleware([requireSupabaseAuth])
+  .inputValidator((input) => brandSchema.parse(input))
+  .handler(async ({ data, context }) => {
+    await assertAdmin(context.userId);
+    const payload = { ...data, updated_at: new Date().toISOString() };
+    if (data.id) {
+      const { error } = await supabaseAdmin.from("brands").update(payload).eq("id", data.id);
+      if (error) throw new Error(error.message);
+      return { ok: true, id: data.id };
+    }
+    const { data: row, error } = await supabaseAdmin.from("brands").insert(payload).select("id").single();
+    if (error) throw new Error(error.message);
+    return { ok: true, id: row.id };
+  });
+
+export const deleteBrand = createServerFn({ method: "POST" })
+  .middleware([requireSupabaseAuth])
+  .inputValidator((input: { id: string }) => z.object({ id: z.string().uuid() }).parse(input))
+  .handler(async ({ data, context }) => {
+    await assertAdmin(context.userId);
+    const { error } = await supabaseAdmin.from("brands").delete().eq("id", data.id);
+    if (error) throw new Error(error.message);
+    return { ok: true };
+  });
+
+// ------ ORDERS ------
+export const listOrders = createServerFn({ method: "GET" })
+  .middleware([requireSupabaseAuth])
+  .handler(async ({ context }) => {
+    await assertAdmin(context.userId);
+    const { data, error } = await supabaseAdmin
+      .from("orders")
+      .select("*")
+      .order("created_at", { ascending: false })
+      .limit(500);
+    if (error) throw new Error(error.message);
+    return data;
+  });
+
+export const updateOrderStatus = createServerFn({ method: "POST" })
+  .middleware([requireSupabaseAuth])
+  .inputValidator((input: { id: string; status: string; notes?: string }) =>
+    z.object({
+      id: z.string().uuid(),
+      status: z.enum(["novo", "em_atendimento", "concluido", "cancelado"]),
+      notes: z.string().max(2000).optional(),
+    }).parse(input),
+  )
+  .handler(async ({ data, context }) => {
+    await assertAdmin(context.userId);
+    const patch: any = { status: data.status, updated_at: new Date().toISOString() };
+    if (data.notes !== undefined) patch.notes = data.notes;
+    const { error } = await supabaseAdmin.from("orders").update(patch).eq("id", data.id);
+    if (error) throw new Error(error.message);
+    return { ok: true };
+  });
+
+// ------ DASHBOARD ------
+export const getAdminStats = createServerFn({ method: "GET" })
+  .middleware([requireSupabaseAuth])
+  .handler(async ({ context }) => {
+    await assertAdmin(context.userId);
+    const [products, ordersNew, leadsUnread, conversations, tryons] = await Promise.all([
+      supabaseAdmin.from("products").select("*", { count: "exact", head: true }).eq("active", true),
+      supabaseAdmin.from("orders").select("*", { count: "exact", head: true }).eq("status", "novo"),
+      supabaseAdmin.from("leads").select("*", { count: "exact", head: true }).eq("read", false),
+      supabaseAdmin.from("conversations").select("*", { count: "exact", head: true }),
+      supabaseAdmin.from("virtual_try_on_sessions").select("*", { count: "exact", head: true }),
+    ]);
+    return {
+      activeProducts: products.count ?? 0,
+      newOrders: ordersNew.count ?? 0,
+      unreadLeads: leadsUnread.count ?? 0,
+      conversations: conversations.count ?? 0,
+      tryonSessions: tryons.count ?? 0,
+    };
+  });
+

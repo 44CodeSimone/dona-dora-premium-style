@@ -86,6 +86,33 @@ export type Database = {
         }
         Relationships: []
       }
+      customer_profiles: {
+        Row: {
+          address: Json
+          created_at: string
+          full_name: string | null
+          phone: string | null
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          address?: Json
+          created_at?: string
+          full_name?: string | null
+          phone?: string | null
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          address?: Json
+          created_at?: string
+          full_name?: string | null
+          phone?: string | null
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
       leads: {
         Row: {
           budget: string | null
@@ -222,6 +249,7 @@ export type Database = {
       products: {
         Row: {
           active: boolean
+          allow_virtual_try_on: boolean
           alt_text: string | null
           available: boolean
           brand: string | null
@@ -246,6 +274,7 @@ export type Database = {
         }
         Insert: {
           active?: boolean
+          allow_virtual_try_on?: boolean
           alt_text?: string | null
           available?: boolean
           brand?: string | null
@@ -270,6 +299,7 @@ export type Database = {
         }
         Update: {
           active?: boolean
+          allow_virtual_try_on?: boolean
           alt_text?: string | null
           available?: boolean
           brand?: string | null
@@ -352,6 +382,7 @@ export type Database = {
           vip_link: string
           vip_subtitle: string
           vip_title: string
+          virtual_tryon_enabled: boolean
           whatsapp: string
           whatsapp_display: string
         }
@@ -391,6 +422,7 @@ export type Database = {
           vip_link?: string
           vip_subtitle?: string
           vip_title?: string
+          virtual_tryon_enabled?: boolean
           whatsapp?: string
           whatsapp_display?: string
         }
@@ -430,6 +462,7 @@ export type Database = {
           vip_link?: string
           vip_subtitle?: string
           vip_title?: string
+          virtual_tryon_enabled?: boolean
           whatsapp?: string
           whatsapp_display?: string
         }
@@ -452,6 +485,105 @@ export type Database = {
           created_at?: string
           id?: string
           role?: Database["public"]["Enums"]["app_role"]
+          user_id?: string
+        }
+        Relationships: []
+      }
+      virtual_try_on_consents: {
+        Row: {
+          accepted_at: string
+          consent_text: string
+          created_at: string
+          id: string
+          product_id: string
+          selected_color: string | null
+          selected_size: string | null
+          user_id: string
+        }
+        Insert: {
+          accepted_at?: string
+          consent_text: string
+          created_at?: string
+          id?: string
+          product_id: string
+          selected_color?: string | null
+          selected_size?: string | null
+          user_id: string
+        }
+        Update: {
+          accepted_at?: string
+          consent_text?: string
+          created_at?: string
+          id?: string
+          product_id?: string
+          selected_color?: string | null
+          selected_size?: string | null
+          user_id?: string
+        }
+        Relationships: []
+      }
+      virtual_try_on_sessions: {
+        Row: {
+          consent_accepted: boolean
+          created_at: string
+          deleted_at: string | null
+          expires_at: string
+          generated_image_path: string | null
+          id: string
+          original_image_path: string | null
+          product_id: string
+          selected_color: string | null
+          selected_size: string | null
+          status: string
+          user_id: string
+        }
+        Insert: {
+          consent_accepted?: boolean
+          created_at?: string
+          deleted_at?: string | null
+          expires_at?: string
+          generated_image_path?: string | null
+          id?: string
+          original_image_path?: string | null
+          product_id: string
+          selected_color?: string | null
+          selected_size?: string | null
+          status?: string
+          user_id: string
+        }
+        Update: {
+          consent_accepted?: boolean
+          created_at?: string
+          deleted_at?: string | null
+          expires_at?: string
+          generated_image_path?: string | null
+          id?: string
+          original_image_path?: string | null
+          product_id?: string
+          selected_color?: string | null
+          selected_size?: string | null
+          status?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
+      wishlist: {
+        Row: {
+          created_at: string
+          id: string
+          product_id: string
+          user_id: string
+        }
+        Insert: {
+          created_at?: string
+          id?: string
+          product_id: string
+          user_id: string
+        }
+        Update: {
+          created_at?: string
+          id?: string
+          product_id?: string
           user_id?: string
         }
         Relationships: []

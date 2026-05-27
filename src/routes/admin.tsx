@@ -49,8 +49,9 @@ import {
   deleteBrand,
   listOrders,
   updateOrderStatus,
+  getAdminStats,
+  getAdminSiteSettings,
 } from "@/lib/admin.functions";
-import { getAdminSiteSettings } from "@/lib/admin.functions";
 import { toast } from "sonner";
 
 export const Route = createFileRoute("/admin")({
