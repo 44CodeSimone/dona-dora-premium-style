@@ -628,6 +628,11 @@ function ProductDialog({ open, onOpenChange, initial }: { open: boolean; onOpenC
             <ToggleField label="Destaque" value={f.featured} onChange={(v) => set("featured", v)} />
             <ToggleField label="Promoção" value={f.promo} onChange={(v) => set("promo", v)} />
           </div>
+          <ToggleField
+            label="Disponível no Provador Virtual"
+            value={!!f.allow_virtual_try_on}
+            onChange={(v) => set("allow_virtual_try_on", v)}
+          />
         </div>
         <DialogFooter>
           <Button variant="outline" onClick={() => onOpenChange(false)}>Cancelar</Button>
