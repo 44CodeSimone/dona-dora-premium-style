@@ -138,6 +138,7 @@ function AdminPage() {
             <TabsTrigger value="marcas">Marcas</TabsTrigger>
             <TabsTrigger value="pedidos">Pedidos</TabsTrigger>
             <TabsTrigger value="identidade">Identidade</TabsTrigger>
+            <TabsTrigger value="loja">Loja</TabsTrigger>
             <TabsTrigger value="vip">Grupo VIP</TabsTrigger>
             <TabsTrigger value="leads">Leads</TabsTrigger>
             <TabsTrigger value="seo">SEO</TabsTrigger>
@@ -148,6 +149,7 @@ function AdminPage() {
           <TabsContent value="marcas"><BrandsTab /></TabsContent>
           <TabsContent value="pedidos"><OrdersTab /></TabsContent>
           <TabsContent value="identidade"><IdentityTab /></TabsContent>
+          <TabsContent value="loja"><StoreSettingsTab /></TabsContent>
           <TabsContent value="vip"><VipTab /></TabsContent>
           <TabsContent value="leads"><LeadsTab /></TabsContent>
           <TabsContent value="seo"><SeoTab /></TabsContent>
