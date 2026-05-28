@@ -131,6 +131,7 @@ const productInput = z.object({
   active: z.boolean().default(true),
   available: z.boolean().default(true),
   alt_text: z.string().max(160).nullable().optional(),
+  allow_virtual_try_on: z.boolean().default(false),
 });
 
 export const upsertProduct = createServerFn({ method: "POST" })
