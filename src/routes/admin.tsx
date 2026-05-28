@@ -131,8 +131,9 @@ function AdminPage() {
       </header>
 
       <main className="max-w-7xl mx-auto px-4 md:px-6 py-8">
-        <Tabs defaultValue="produtos">
+        <Tabs defaultValue="dashboard">
           <TabsList className="flex flex-wrap h-auto">
+            <TabsTrigger value="dashboard">Dashboard</TabsTrigger>
             <TabsTrigger value="produtos">Produtos</TabsTrigger>
             <TabsTrigger value="marcas">Marcas</TabsTrigger>
             <TabsTrigger value="pedidos">Pedidos</TabsTrigger>
@@ -142,6 +143,7 @@ function AdminPage() {
             <TabsTrigger value="seo">SEO</TabsTrigger>
             <TabsTrigger value="dora">Dora IA</TabsTrigger>
           </TabsList>
+          <TabsContent value="dashboard"><DashboardTab /></TabsContent>
           <TabsContent value="produtos"><ProductsTab /></TabsContent>
           <TabsContent value="marcas"><BrandsTab /></TabsContent>
           <TabsContent value="pedidos"><OrdersTab /></TabsContent>
