@@ -1085,3 +1085,116 @@ function OrdersTab() {
     </div>
   );
 }
+
+// ============ LOJA (configurações gerais) ============
+function StoreSettingsTab() {
+  const qc = useQueryClient();
+  const get = useServerFn(getAdminSiteSettings);
+  const save = useServerFn(updateSiteSettings);
+  const { data } = useQuery({ queryKey: ["settings"], queryFn: () => get() });
+  const [form, setForm] = useState<any>(null);
+  useEffect(() => { if (data && !form) setForm(data); }, [data, form]);
+
+  const mut = useMutation({
+    mutationFn: (p: any) => save({ data: p }),
+    onSuccess: () => {
+      toast.success("Salvo!");
+      qc.invalidateQueries({ queryKey: ["settings"] });
+      qc.invalidateQueries({ queryKey: ["site-settings"] });
+    },
+    onError: (e: any) => toast.error(e?.message ?? "Erro"),
+  });
+
+  if (!form) return <div className="p-8 text-muted-foreground">Carregando...</div>;
+  const set = (k: string, v: any) => setForm({ ...form, [k]: v });
+  const benefits: Array<{ title: string; desc: string }> = Array.isArray(form.benefits) ? form.benefits : [];
+  const policies = form.policies && typeof form.policies === "object" ? form.policies : {};
+
+  return (
+    <div className="space-y-6 max-w-3xl">
+      <Section title="Barra superior do site">
+        <Field label="Texto da barra (topbar)">
+          <Input value={form.topbar_text ?? ""} onChange={(e) => set("topbar_text", e.target.value)} maxLength={200} />
+        </Field>
+      </Section>
+
+      <Section title="Benefícios (até 8)">
+        <div className="space-y-3">
+          {benefits.map((b, i) => (
+            <div key={i} className="grid sm:grid-cols-[1fr_2fr_auto] gap-2 items-start border rounded p-3">
+              <Input
+                placeholder="Título"
+                value={b.title}
+                onChange={(e) => {
+                  const next = benefits.slice();
+                  next[i] = { ...next[i], title: e.target.value };
+                  set("benefits", next);
+                }}
+                maxLength={80}
+              />
+              <Input
+                placeholder="Descrição"
+                value={b.desc}
+                onChange={(e) => {
+                  const next = benefits.slice();
+                  next[i] = { ...next[i], desc: e.target.value };
+                  set("benefits", next);
+                }}
+                maxLength={200}
+              />
+              <Button variant="ghost" size="sm" onClick={() => set("benefits", benefits.filter((_, j) => j !== i))}>
+                <Trash2 className="size-4" />
+              </Button>
+            </div>
+          ))}
+          {benefits.length < 8 && (
+            <Button variant="outline" size="sm" onClick={() => set("benefits", [...benefits, { title: "", desc: "" }])}>
+              <Plus className="size-4 mr-1" /> Adicionar benefício
+            </Button>
+          )}
+        </div>
+      </Section>
+
+      <Section title="Formas de pagamento">
+        <TagInput
+          value={Array.isArray(form.payment_methods) ? form.payment_methods : []}
+          onChange={(v) => set("payment_methods", v)}
+          placeholder="Pix, Cartão de crédito..."
+        />
+      </Section>
+
+      <Section title="Políticas">
+        <Field label="Trocas">
+          <Textarea rows={2} maxLength={400} value={policies.trocas ?? ""} onChange={(e) => set("policies", { ...policies, trocas: e.target.value })} />
+        </Field>
+        <Field label="Envio">
+          <Textarea rows={2} maxLength={400} value={policies.envio ?? ""} onChange={(e) => set("policies", { ...policies, envio: e.target.value })} />
+        </Field>
+        <Field label="Privacidade">
+          <Textarea rows={2} maxLength={400} value={policies.privacidade ?? ""} onChange={(e) => set("policies", { ...policies, privacidade: e.target.value })} />
+        </Field>
+      </Section>
+
+      <Section title="Redes sociais e contato (atalho)">
+        <div className="grid sm:grid-cols-2 gap-3">
+          <Field label="WhatsApp (55...)"><Input value={form.whatsapp ?? ""} onChange={(e) => set("whatsapp", e.target.value)} /></Field>
+          <Field label="WhatsApp (exibição)"><Input value={form.whatsapp_display ?? ""} onChange={(e) => set("whatsapp_display", e.target.value)} /></Field>
+          <Field label="Instagram URL"><Input value={form.instagram_url ?? ""} onChange={(e) => set("instagram_url", e.target.value)} /></Field>
+          <Field label="@instagram"><Input value={form.instagram_handle ?? ""} onChange={(e) => set("instagram_handle", e.target.value)} /></Field>
+        </div>
+      </Section>
+
+      <Section title="Provador Virtual (global)">
+        <ToggleField
+          label="Habilitar Provador Virtual no site"
+          value={!!form.virtual_tryon_enabled}
+          onChange={(v) => set("virtual_tryon_enabled", v)}
+        />
+      </Section>
+
+      <Button onClick={() => mut.mutate(stripUnchanged(form, data))} disabled={mut.isPending}>
+        {mut.isPending ? "Salvando..." : "Salvar configurações"}
+      </Button>
+    </div>
+  );
+}
