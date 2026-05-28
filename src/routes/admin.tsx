@@ -798,3 +798,288 @@ function stripUnchanged(form: any, original: any) {
   }
   return out;
 }
+
+// ============ DASHBOARD ============
+function DashboardTab() {
+  const get = useServerFn(getAdminStats);
+  const { data, isLoading } = useQuery({ queryKey: ["admin-stats"], queryFn: () => get() });
+  if (isLoading || !data) return <div className="p-8 text-muted-foreground">Carregando...</div>;
+  const cards = [
+    { label: "Produtos ativos", value: data.activeProducts },
+    { label: "Pedidos novos", value: data.newOrders },
+    { label: "Leads não lidos", value: data.unreadLeads },
+    { label: "Conversas Dora", value: data.conversations },
+    { label: "Provador Virtual", value: data.tryonSessions },
+  ];
+  return (
+    <div className="space-y-6">
+      <h2 className="font-display text-2xl">Visão geral</h2>
+      <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-5 gap-4">
+        {cards.map((c) => (
+          <div key={c.label} className="bg-card rounded border p-5">
+            <div className="text-xs uppercase tracking-wider text-muted-foreground">{c.label}</div>
+            <div className="font-display text-4xl mt-2">{c.value}</div>
+          </div>
+        ))}
+      </div>
+    </div>
+  );
+}
+
+// ============ MARCAS ============
+function BrandsTab() {
+  const qc = useQueryClient();
+  const list = useServerFn(listAllBrands);
+  const save = useServerFn(upsertBrand);
+  const remove = useServerFn(deleteBrand);
+  const { data: brands } = useQuery({ queryKey: ["all-brands"], queryFn: () => list() });
+  const [open, setOpen] = useState(false);
+  const [editing, setEditing] = useState<any | null>(null);
+  const [f, setF] = useState<any>(emptyBrand());
+
+  useEffect(() => {
+    setF(editing ? { ...emptyBrand(), ...editing } : emptyBrand());
+  }, [editing, open]);
+
+  const mut = useMutation({
+    mutationFn: (p: any) => save({ data: p }),
+    onSuccess: () => {
+      toast.success("Salvo!");
+      qc.invalidateQueries({ queryKey: ["all-brands"] });
+      setOpen(false);
+    },
+    onError: (e: any) => toast.error(e?.message ?? "Erro"),
+  });
+
+  const del = useMutation({
+    mutationFn: (id: string) => remove({ data: { id } }),
+    onSuccess: () => {
+      toast.success("Removida.");
+      qc.invalidateQueries({ queryKey: ["all-brands"] });
+    },
+  });
+
+  const set = (k: string, v: any) => setF({ ...f, [k]: v });
+
+  return (
+    <div className="space-y-4">
+      <div className="flex justify-between items-center">
+        <h2 className="font-display text-2xl">Marcas ({brands?.length ?? 0})</h2>
+        <Button onClick={() => { setEditing(null); setOpen(true); }}>
+          <Plus className="size-4 mr-1" /> Nova marca
+        </Button>
+      </div>
+
+      <div className="bg-card rounded border overflow-x-auto">
+        <Table>
+          <TableHeader>
+            <TableRow>
+              <TableHead>Logo</TableHead>
+              <TableHead>Nome</TableHead>
+              <TableHead>Slug</TableHead>
+              <TableHead>Status</TableHead>
+              <TableHead></TableHead>
+            </TableRow>
+          </TableHeader>
+          <TableBody>
+            {brands?.map((b: any) => (
+              <TableRow key={b.id}>
+                <TableCell>
+                  {b.logo_url
+                    ? <img src={b.logo_url} alt="" className="size-12 object-contain rounded bg-muted/30" />
+                    : <div className="size-12 bg-muted rounded" />}
+                </TableCell>
+                <TableCell className="font-medium">{b.name}</TableCell>
+                <TableCell className="text-xs text-muted-foreground">{b.slug}</TableCell>
+                <TableCell>
+                  <div className="flex gap-1 flex-wrap">
+                    {b.active ? <Badge>Ativa</Badge> : <Badge variant="outline">Inativa</Badge>}
+                    {b.featured && <Badge variant="secondary">Destaque</Badge>}
+                  </div>
+                </TableCell>
+                <TableCell className="text-right whitespace-nowrap">
+                  <Button size="sm" variant="ghost" onClick={() => { setEditing(b); setOpen(true); }}>Editar</Button>
+                  <Button size="sm" variant="ghost" onClick={() => confirm(`Excluir a marca ${b.name}?`) && del.mutate(b.id)}>
+                    <Trash2 className="size-4" />
+                  </Button>
+                </TableCell>
+              </TableRow>
+            ))}
+            {!brands?.length && (
+              <TableRow><TableCell colSpan={5} className="text-center text-muted-foreground py-10">Nenhuma marca ainda.</TableCell></TableRow>
+            )}
+          </TableBody>
+        </Table>
+      </div>
+
+      <Dialog open={open} onOpenChange={setOpen}>
+        <DialogContent className="max-w-lg">
+          <DialogHeader><DialogTitle>{editing ? "Editar marca" : "Nova marca"}</DialogTitle></DialogHeader>
+          <div className="space-y-4">
+            <Field label="Nome">
+              <Input value={f.name} onChange={(e) => {
+                const name = e.target.value;
+                setF({ ...f, name, slug: f.slug || slugify(name) });
+              }} />
+            </Field>
+            <Field label="Slug (URL)"><Input value={f.slug} onChange={(e) => set("slug", slugify(e.target.value))} /></Field>
+            <Field label="Descrição"><Textarea rows={3} value={f.description ?? ""} onChange={(e) => set("description", e.target.value || null)} /></Field>
+            <Field label="Logo"><ImageUploader value={f.logo_url} onChange={(u) => set("logo_url", u)} folder="brands" /></Field>
+            <Field label="Ordem"><Input type="number" min={0} value={f.order_index ?? 0} onChange={(e) => set("order_index", parseInt(e.target.value || "0"))} /></Field>
+            <div className="grid grid-cols-2 gap-3">
+              <ToggleField label="Ativa" value={f.active} onChange={(v) => set("active", v)} />
+              <ToggleField label="Destaque" value={f.featured} onChange={(v) => set("featured", v)} />
+            </div>
+          </div>
+          <DialogFooter>
+            <Button variant="outline" onClick={() => setOpen(false)}>Cancelar</Button>
+            <Button onClick={() => mut.mutate(f)} disabled={mut.isPending || !f.name || !f.slug}>
+              {mut.isPending ? "Salvando..." : "Salvar"}
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+    </div>
+  );
+}
+
+function emptyBrand() {
+  return { name: "", slug: "", logo_url: null, description: "", featured: false, order_index: 0, active: true };
+}
+function slugify(s: string) {
+  return s.toLowerCase().normalize("NFD").replace(/[\u0300-\u036f]/g, "").replace(/[^a-z0-9]+/g, "-").replace(/^-|-$/g, "").slice(0, 80);
+}
+
+// ============ PEDIDOS ============
+const ORDER_STATUSES = [
+  { v: "novo", l: "Novo" },
+  { v: "em_atendimento", l: "Em atendimento" },
+  { v: "concluido", l: "Concluído" },
+  { v: "cancelado", l: "Cancelado" },
+] as const;
+
+function OrdersTab() {
+  const qc = useQueryClient();
+  const list = useServerFn(listOrders);
+  const update = useServerFn(updateOrderStatus);
+  const { data: orders } = useQuery({ queryKey: ["orders"], queryFn: () => list() });
+  const [filter, setFilter] = useState<string>("all");
+  const [viewing, setViewing] = useState<any | null>(null);
+
+  const mut = useMutation({
+    mutationFn: (p: { id: string; status: any; notes?: string }) => update({ data: p }),
+    onSuccess: () => {
+      toast.success("Status atualizado.");
+      qc.invalidateQueries({ queryKey: ["orders"] });
+    },
+    onError: (e: any) => toast.error(e?.message ?? "Erro"),
+  });
+
+  const filtered = (orders ?? []).filter((o: any) => filter === "all" || o.status === filter);
+
+  return (
+    <div className="space-y-4">
+      <div className="flex justify-between items-center flex-wrap gap-3">
+        <h2 className="font-display text-2xl">Pedidos ({orders?.length ?? 0})</h2>
+        <Select value={filter} onValueChange={setFilter}>
+          <SelectTrigger className="w-[220px]"><SelectValue /></SelectTrigger>
+          <SelectContent>
+            <SelectItem value="all">Todos os status</SelectItem>
+            {ORDER_STATUSES.map((s) => <SelectItem key={s.v} value={s.v}>{s.l}</SelectItem>)}
+          </SelectContent>
+        </Select>
+      </div>
+
+      <div className="bg-card rounded border overflow-x-auto">
+        <Table>
+          <TableHeader>
+            <TableRow>
+              <TableHead>Data</TableHead>
+              <TableHead>Cliente</TableHead>
+              <TableHead>WhatsApp</TableHead>
+              <TableHead>Itens</TableHead>
+              <TableHead>Total</TableHead>
+              <TableHead>Status</TableHead>
+              <TableHead></TableHead>
+            </TableRow>
+          </TableHeader>
+          <TableBody>
+            {filtered.map((o: any) => (
+              <TableRow key={o.id}>
+                <TableCell className="text-xs">{new Date(o.created_at).toLocaleString("pt-BR")}</TableCell>
+                <TableCell className="font-medium">{o.customer_name}</TableCell>
+                <TableCell>{o.customer_whatsapp}</TableCell>
+                <TableCell className="text-xs text-muted-foreground">
+                  {Array.isArray(o.items) ? `${o.items.length} ${o.items.length === 1 ? "item" : "itens"}` : "—"}
+                </TableCell>
+                <TableCell>R$ {Number(o.subtotal ?? 0).toFixed(2)}</TableCell>
+                <TableCell>
+                  <Select
+                    value={o.status}
+                    onValueChange={(v) => mut.mutate({ id: o.id, status: v as any })}
+                  >
+                    <SelectTrigger className="h-8 w-[160px]"><SelectValue /></SelectTrigger>
+                    <SelectContent>
+                      {ORDER_STATUSES.map((s) => <SelectItem key={s.v} value={s.v}>{s.l}</SelectItem>)}
+                    </SelectContent>
+                  </Select>
+                </TableCell>
+                <TableCell className="text-right">
+                  <Button size="sm" variant="ghost" onClick={() => setViewing(o)}>
+                    <Eye className="size-4" />
+                  </Button>
+                </TableCell>
+              </TableRow>
+            ))}
+            {!filtered.length && (
+              <TableRow><TableCell colSpan={7} className="text-center text-muted-foreground py-10">Nenhum pedido.</TableCell></TableRow>
+            )}
+          </TableBody>
+        </Table>
+      </div>
+
+      <Dialog open={!!viewing} onOpenChange={(o) => !o && setViewing(null)}>
+        <DialogContent className="max-w-xl max-h-[90vh] overflow-y-auto">
+          <DialogHeader><DialogTitle>Pedido — {viewing?.customer_name}</DialogTitle></DialogHeader>
+          {viewing && (
+            <div className="space-y-3 text-sm">
+              <Row k="Data" v={new Date(viewing.created_at).toLocaleString("pt-BR")} />
+              <Row k="Cliente" v={viewing.customer_name} />
+              <Row k="WhatsApp" v={viewing.customer_whatsapp} />
+              <Row k="E-mail" v={viewing.customer_email} />
+              <Row k="Status" v={ORDER_STATUSES.find((s) => s.v === viewing.status)?.l ?? viewing.status} />
+              <Row k="Total" v={`R$ ${Number(viewing.subtotal ?? 0).toFixed(2)}`} />
+              <Row k="Observações" v={viewing.notes} />
+              <div className="border-t pt-3">
+                <div className="text-xs uppercase tracking-wider text-muted-foreground mb-2">Itens</div>
+                <div className="space-y-2">
+                  {(viewing.items ?? []).map((it: any, i: number) => (
+                    <div key={i} className="flex justify-between gap-2 border-b pb-1.5">
+                      <div className="flex-1">
+                        <div className="font-medium">{it.name}</div>
+                        <div className="text-xs text-muted-foreground">
+                          {it.size && `Tam: ${it.size} · `}{it.color && `Cor: ${it.color} · `}Qtd: {it.qty ?? 1}
+                        </div>
+                      </div>
+                      <div className="text-right">R$ {Number(it.price ?? 0).toFixed(2)}</div>
+                    </div>
+                  ))}
+                </div>
+              </div>
+              {viewing.customer_whatsapp && (
+                <a
+                  href={`https://wa.me/${String(viewing.customer_whatsapp).replace(/\D/g, "")}`}
+                  target="_blank"
+                  rel="noreferrer"
+                  className="inline-flex items-center gap-2 mt-3 px-4 py-2 bg-foreground text-background text-xs uppercase tracking-luxe rounded"
+                >
+                  Falar no WhatsApp <ExternalLink className="size-3" />
+                </a>
+              )}
+            </div>
+          )}
+        </DialogContent>
+      </Dialog>
+    </div>
+  );
+}
