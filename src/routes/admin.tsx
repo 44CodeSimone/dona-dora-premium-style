@@ -654,6 +654,7 @@ function emptyProduct() {
     installments: 1, stock: 0, brand: "",
     image_url: null, images: [], sizes: [], colors: [],
     featured: false, promo: false, active: true, available: true, alt_text: "",
+    allow_virtual_try_on: false,
   };
 }
 
