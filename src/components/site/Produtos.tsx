@@ -246,12 +246,24 @@ export function Produtos() {
                       <MessageCircle className="size-4" />
                     </a>
                   </div>
+                  {settings?.virtual_tryon_enabled && p.allow_virtual_try_on && !outOfStock && (
+                    <button
+                      onClick={() => setTryOnProduct(p)}
+                      className="mt-3 inline-flex items-center justify-center gap-2 px-4 py-2.5 border border-foreground/20 hover:border-[color:var(--gold)] hover:text-[color:var(--gold)] text-[11px] tracking-luxe uppercase transition-colors"
+                    >
+                      <Sparkles className="size-3.5" />
+                      Provador Virtual
+                    </button>
+                  )}
                 </div>
               );
             })}
           </div>
         )}
       </div>
+      {tryOnProduct && (
+        <VirtualTryOnModal product={tryOnProduct} onClose={() => setTryOnProduct(null)} />
+      )}
     </section>
   );
 }
