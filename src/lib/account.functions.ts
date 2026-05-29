@@ -117,3 +117,56 @@ export const removeFromWishlist = createServerFn({ method: "POST" })
     if (error) throw new Error(error.message);
     return { ok: true };
   });
+
+// ---- Reviews ----
+const reviewInput = z.object({
+  product_id: z.string().uuid(),
+  rating: z.number().int().min(1).max(5),
+  comment: z.string().trim().min(3).max(2000),
+  author_name: z.string().trim().min(1).max(120),
+});
+
+export const submitReview = createServerFn({ method: "POST" })
+  .middleware([requireSupabaseAuth])
+  .inputValidator((input) => reviewInput.parse(input))
+  .handler(async ({ data, context }) => {
+    const { error } = await supabaseAdmin.from("reviews").upsert(
+      {
+        product_id: data.product_id,
+        user_id: context.userId,
+        rating: data.rating,
+        comment: data.comment,
+        author_name: data.author_name,
+        status: "pending",
+        updated_at: new Date().toISOString(),
+      },
+      { onConflict: "product_id,user_id" },
+    );
+    if (error) throw new Error(error.message);
+    return { ok: true };
+  });
+
+export const getMyReviews = createServerFn({ method: "GET" })
+  .middleware([requireSupabaseAuth])
+  .handler(async ({ context }) => {
+    const { data, error } = await supabaseAdmin
+      .from("reviews")
+      .select("id,product_id,rating,comment,status,created_at")
+      .eq("user_id", context.userId)
+      .order("created_at", { ascending: false });
+    if (error) throw new Error(error.message);
+    return data ?? [];
+  });
+
+export const deleteMyReview = createServerFn({ method: "POST" })
+  .middleware([requireSupabaseAuth])
+  .inputValidator((input: { id: string }) => z.object({ id: z.string().uuid() }).parse(input))
+  .handler(async ({ data, context }) => {
+    const { error } = await supabaseAdmin
+      .from("reviews")
+      .delete()
+      .eq("id", data.id)
+      .eq("user_id", context.userId);
+    if (error) throw new Error(error.message);
+    return { ok: true };
+  });
