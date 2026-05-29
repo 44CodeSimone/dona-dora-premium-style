@@ -116,13 +116,23 @@ export function DoraFloat() {
                       onKeyDown={(e) => e.key === "Enter" && send()}
                       placeholder="Escreva sua mensagem…"
                     />
-                    <button onClick={send} disabled={sending} className="size-10 grid place-items-center rounded-full bg-foreground text-background disabled:opacity-50">
+                    <button onClick={send} disabled={sending} className="size-10 grid place-items-center rounded-full bg-foreground text-background disabled:opacity-50" aria-label="Enviar">
                       <Send className="size-4" />
                     </button>
                   </div>
-                  <button onClick={() => setPhase("form")} className="w-full text-xs tracking-luxe uppercase py-2.5 bg-[color:var(--gold)] text-foreground rounded">
-                    Continuar e deixar meus dados
-                  </button>
+                  <div className="grid grid-cols-2 gap-2">
+                    <a
+                      href={`https://wa.me/${whatsapp}?text=${encodeURIComponent("Oi Dona Dora! Vim pelo site e gostaria de falar com você ✨")}`}
+                      target="_blank"
+                      rel="noreferrer"
+                      className="flex items-center justify-center gap-2 text-xs tracking-luxe uppercase py-2.5 bg-emerald-600 hover:bg-emerald-700 text-white rounded transition"
+                    >
+                      <MessageCircle className="size-4" /> WhatsApp
+                    </a>
+                    <button onClick={() => setPhase("form")} className="text-xs tracking-luxe uppercase py-2.5 bg-[color:var(--gold)] text-foreground rounded">
+                      Deixar meus dados
+                    </button>
+                  </div>
                 </div>
               </>
             )}
