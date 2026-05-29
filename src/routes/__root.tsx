@@ -88,8 +88,8 @@ export const Route = createRootRouteWithContext<{ queryClient: QueryClient }>()(
       { name: "description", content: "Dona Dora Boutique Premium offers a sophisticated online presence for a modern fashion boutique, enhancing sales and brand authority." },
       { property: "og:description", content: "Dona Dora Boutique Premium offers a sophisticated online presence for a modern fashion boutique, enhancing sales and brand authority." },
       { name: "twitter:description", content: "Dona Dora Boutique Premium offers a sophisticated online presence for a modern fashion boutique, enhancing sales and brand authority." },
-      { property: "og:image", content: "https://pub-bb2e103a32db4e198524a2e9ed8f35b4.r2.dev/b55eff48-230f-4c54-9095-07956d6339cb/id-preview-53fca528--7db6cd50-c55d-46a5-93e9-c3734975f015.lovable.app-1779254002628.png" },
-      { name: "twitter:image", content: "https://pub-bb2e103a32db4e198524a2e9ed8f35b4.r2.dev/b55eff48-230f-4c54-9095-07956d6339cb/id-preview-53fca528--7db6cd50-c55d-46a5-93e9-c3734975f015.lovable.app-1779254002628.png" },
+      { property: "og:image", content: "https://storage.googleapis.com/gpt-engineer-file-uploads/lS8qu0QrmuM6oh5zwFP6kI9rfPT2/social-images/social-1780077343808-dona_dora_logo.webp" },
+      { name: "twitter:image", content: "https://storage.googleapis.com/gpt-engineer-file-uploads/lS8qu0QrmuM6oh5zwFP6kI9rfPT2/social-images/social-1780077343808-dona_dora_logo.webp" },
     ],
     links: [
       { rel: "stylesheet", href: appCss },
