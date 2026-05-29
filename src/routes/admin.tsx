@@ -147,6 +147,8 @@ function AdminPage() {
             <TabsTrigger value="leads">Leads</TabsTrigger>
             <TabsTrigger value="seo">SEO</TabsTrigger>
             <TabsTrigger value="dora">Dora IA</TabsTrigger>
+            <TabsTrigger value="live">Live</TabsTrigger>
+            <TabsTrigger value="reviews">Avaliações</TabsTrigger>
           </TabsList>
           <TabsContent value="dashboard"><DashboardTab /></TabsContent>
           <TabsContent value="produtos"><ProductsTab /></TabsContent>
@@ -158,6 +160,8 @@ function AdminPage() {
           <TabsContent value="leads"><LeadsTab /></TabsContent>
           <TabsContent value="seo"><SeoTab /></TabsContent>
           <TabsContent value="dora"><DoraTab /></TabsContent>
+          <TabsContent value="live"><LiveTab /></TabsContent>
+          <TabsContent value="reviews"><ReviewsTab /></TabsContent>
         </Tabs>
       </main>
     </div>
