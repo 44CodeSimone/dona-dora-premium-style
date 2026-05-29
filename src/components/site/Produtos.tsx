@@ -47,6 +47,7 @@ export function Produtos() {
   const [onlyFeatured, setOnlyFeatured] = useState(false);
   const [search, setSearch] = useState("");
   const [debounced, setDebounced] = useState("");
+  const [tryOnProduct, setTryOnProduct] = useState<any | null>(null);
   const cart = useCart();
 
   useEffect(() => {
