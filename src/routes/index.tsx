@@ -12,6 +12,9 @@ import { Depoimentos } from "@/components/site/Depoimentos";
 import { Contato } from "@/components/site/Contato";
 import { Footer } from "@/components/site/Footer";
 import { DoraFloat } from "@/components/site/DoraFloat";
+import { Marquee } from "@/components/site/Marquee";
+import { Reveal } from "@/components/site/Reveal";
+import { useGlobalRipple } from "@/hooks/use-global-ripple";
 
 export const Route = createFileRoute("/")({
   head: () => ({
@@ -37,23 +40,26 @@ export const Route = createFileRoute("/")({
 });
 
 function Index() {
+  useGlobalRipple();
   return (
     <div className="bg-background text-foreground">
       <Topbar />
       <Nav />
       <main>
         <Hero />
-        <Beneficios />
-        <Categorias />
-        <Produtos />
-        <Marcas />
-        <GrupoVip />
-        <Instagram />
-        <Depoimentos />
-        <Contato />
+        <Marquee />
+        <Reveal as="section"><Beneficios /></Reveal>
+        <Reveal as="section" delay={80}><Marcas /></Reveal>
+        <Reveal as="section" delay={120}><Categorias /></Reveal>
+        <Reveal as="section" delay={80}><Produtos /></Reveal>
+        <Reveal as="section" delay={120}><GrupoVip /></Reveal>
+        <Reveal as="section" delay={80}><Instagram /></Reveal>
+        <Reveal as="section" delay={80}><Depoimentos /></Reveal>
+        <Reveal as="section" delay={80}><Contato /></Reveal>
       </main>
       <Footer />
       <DoraFloat />
     </div>
   );
 }
+

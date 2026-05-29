@@ -53,6 +53,20 @@ export function Produtos() {
     return () => clearTimeout(t);
   }, [search]);
 
+  // Listen to category changes triggered from Categorias section
+  useEffect(() => {
+    const handler = (e: Event) => {
+      const detail = (e as CustomEvent).detail as { category?: string } | undefined;
+      const cat = detail?.category;
+      if (!cat) return;
+      const known = CATEGORIES.find((c) => c.id === cat);
+      if (known) setCategory(known.id);
+    };
+    window.addEventListener("dd:set-category", handler);
+    return () => window.removeEventListener("dd:set-category", handler);
+  }, []);
+
+
   const { data: settings } = useSiteSettings();
   const whatsapp = settings?.whatsapp ?? "5549991210083";
   const waLink = `https://wa.me/${whatsapp}`;
@@ -159,7 +173,7 @@ export function Produtos() {
               const lowStock = !outOfStock && p.stock != null && p.stock <= 3;
               return (
                 <div key={p.id} className="group flex flex-col">
-                  <div className="img-zoom relative aspect-[3/4] bg-muted overflow-hidden">
+                  <div className="img-zoom card-touch relative aspect-[3/4] bg-muted overflow-hidden">
                     <img
                       src={img}
                       alt={p.alt_text || p.name}

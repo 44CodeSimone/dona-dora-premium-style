@@ -23,10 +23,10 @@ export function Nav() {
 
   return (
     <header
-      className={`sticky top-0 z-50 transition-all duration-500 ease-luxe ${
+      className={`sticky top-0 z-50 transition-all duration-300 ease-luxe ${
         scrolled
-          ? "bg-background/90 backdrop-blur-xl border-b border-border/60"
-          : "bg-background/70 backdrop-blur"
+          ? "bg-background/85 backdrop-blur-xl border-b border-border/60 text-foreground"
+          : "bg-transparent border-b border-transparent text-foreground"
       }`}
     >
       <div className="mx-auto max-w-7xl px-6 md:px-10 h-16 md:h-20 flex items-center justify-between gap-4">
