@@ -79,6 +79,11 @@ const settingsSchema = z
     payment_methods: z.array(z.string().max(40)).max(20).optional(),
     policies: z.object({ trocas: z.string().max(400).optional(), envio: z.string().max(400).optional(), privacidade: z.string().max(400).optional() }).optional(),
     virtual_tryon_enabled: z.boolean().optional(),
+    live_enabled: z.boolean().optional(),
+    live_url: z.string().url().nullable().optional(),
+    live_title: z.string().max(120).optional(),
+    live_description: z.string().max(400).optional(),
+    live_featured_product_ids: z.array(z.string().uuid()).max(24).optional(),
   })
   .strict();
 
