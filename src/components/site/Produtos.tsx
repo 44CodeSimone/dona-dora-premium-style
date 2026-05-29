@@ -53,6 +53,20 @@ export function Produtos() {
     return () => clearTimeout(t);
   }, [search]);
 
+  // Listen to category changes triggered from Categorias section
+  useEffect(() => {
+    const handler = (e: Event) => {
+      const detail = (e as CustomEvent).detail as { category?: string } | undefined;
+      const cat = detail?.category;
+      if (!cat) return;
+      const known = CATEGORIES.find((c) => c.id === cat);
+      if (known) setCategory(known.id);
+    };
+    window.addEventListener("dd:set-category", handler);
+    return () => window.removeEventListener("dd:set-category", handler);
+  }, []);
+
+
   const { data: settings } = useSiteSettings();
   const whatsapp = settings?.whatsapp ?? "5549991210083";
   const waLink = `https://wa.me/${whatsapp}`;
