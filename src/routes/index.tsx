@@ -50,6 +50,7 @@ function Index() {
       <main>
         <Hero />
         <Marquee />
+        <Reveal as="section"><Live /></Reveal>
         <Reveal as="section"><Beneficios /></Reveal>
         <Reveal as="section" delay={80}><Marcas /></Reveal>
         <Reveal as="section" delay={120}><Categorias /></Reveal>
@@ -57,6 +58,7 @@ function Index() {
         <Reveal as="section" delay={120}><GrupoVip /></Reveal>
         <Reveal as="section" delay={80}><Instagram /></Reveal>
         <Reveal as="section" delay={80}><Depoimentos /></Reveal>
+        <Reveal as="section" delay={80}><Avaliacoes /></Reveal>
         <Reveal as="section" delay={80}><Contato /></Reveal>
       </main>
       <Footer />
