@@ -4,11 +4,18 @@ import acc from "@/assets/category-accessories.jpg";
 import joias from "@/assets/category-joias.jpg";
 
 const cats = [
-  { title: "Moda Feminina", desc: "Vestidos, alfaiataria, casual chic.", img: fem, span: "md:col-span-7 md:row-span-2" },
-  { title: "Moda Masculina", desc: "Camisaria, blazers, essenciais.", img: masc, span: "md:col-span-5" },
-  { title: "Acessórios", desc: "Óculos, bolsas, bonés.", img: acc, span: "md:col-span-5" },
-  { title: "Joias", desc: "Peças delicadas e atemporais.", img: joias, span: "md:col-span-12" },
+  { title: "Moda Feminina", desc: "Vestidos, alfaiataria, casual chic.", img: fem, cat: "feminina", span: "md:col-span-7 md:row-span-2" },
+  { title: "Moda Masculina", desc: "Camisaria, blazers, essenciais.", img: masc, cat: "masculina", span: "md:col-span-5" },
+  { title: "Acessórios", desc: "Óculos, bolsas, bonés.", img: acc, cat: "acessorios", span: "md:col-span-5" },
+  { title: "Joias", desc: "Peças delicadas e atemporais.", img: joias, cat: "joias", span: "md:col-span-12" },
 ];
+
+function goToCategory(cat: string) {
+  if (typeof window === "undefined") return;
+  window.dispatchEvent(new CustomEvent("dd:set-category", { detail: { category: cat } }));
+  const el = document.getElementById("colecao");
+  if (el) el.scrollIntoView({ behavior: "smooth", block: "start" });
+}
 
 export function Categorias() {
   return (
@@ -33,12 +40,12 @@ export function Categorias() {
 
         <div className="grid grid-cols-1 md:grid-cols-12 md:auto-rows-[280px] gap-4 md:gap-5">
           {cats.map((c) => (
-            <a
+            <button
               key={c.title}
-              href="#colecao"
-              target="_blank"
-              rel="noreferrer"
-              className={`group relative img-zoom block overflow-hidden bg-foreground/5 ${c.span} aspect-[4/5] md:aspect-auto`}
+              type="button"
+              onClick={() => goToCategory(c.cat)}
+              className={`group relative card-touch block overflow-hidden bg-foreground/5 text-left ${c.span} aspect-[4/5] md:aspect-auto`}
+              aria-label={`Filtrar por ${c.title}`}
             >
               <img
                 src={c.img}
@@ -60,7 +67,7 @@ export function Categorias() {
                   <span className="h-px w-8 bg-background transition-all duration-500 ease-luxe group-hover:w-14 group-hover:bg-gold" />
                 </div>
               </div>
-            </a>
+            </button>
           ))}
         </div>
       </div>
