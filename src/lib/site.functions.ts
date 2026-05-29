@@ -4,7 +4,7 @@ import { z } from "zod";
 
 // Public-safe projection: excludes dora_system_prompt and lead_email
 const PUBLIC_SETTINGS_COLUMNS =
-  "id,brand_name,logo_url,primary_color,accent_color,bg_color,hero_title,hero_subtitle,hero_image_url,hero_cta_text,hero_cta_link,whatsapp,whatsapp_display,instagram_url,instagram_handle,facebook_url,tiktok_url,address,hours_weekday,hours_saturday,vip_title,vip_subtitle,vip_benefits,vip_link,vip_image_url,seo_title,seo_description,seo_keywords,seo_og_image,dora_welcome_message,topbar_text,benefits,payment_methods,policies,updated_at";
+  "id,brand_name,logo_url,primary_color,accent_color,bg_color,hero_title,hero_subtitle,hero_image_url,hero_cta_text,hero_cta_link,whatsapp,whatsapp_display,instagram_url,instagram_handle,facebook_url,tiktok_url,address,hours_weekday,hours_saturday,vip_title,vip_subtitle,vip_benefits,vip_link,vip_image_url,seo_title,seo_description,seo_keywords,seo_og_image,dora_welcome_message,topbar_text,benefits,payment_methods,policies,virtual_tryon_enabled,live_enabled,live_url,live_title,live_description,live_featured_product_ids,updated_at";
 
 export const getSiteSettings = createServerFn({ method: "GET" }).handler(async () => {
   const { data, error } = await supabaseAdmin
@@ -15,6 +15,43 @@ export const getSiteSettings = createServerFn({ method: "GET" }).handler(async (
   if (error) throw new Error(error.message);
   return data;
 });
+
+// Live: returns settings + the featured products (only when enabled)
+export const getLiveData = createServerFn({ method: "GET" }).handler(async () => {
+  const { data: s, error } = await supabaseAdmin
+    .from("site_settings")
+    .select("live_enabled,live_url,live_title,live_description,live_featured_product_ids")
+    .eq("id", 1)
+    .single();
+  if (error) throw new Error(error.message);
+  if (!s?.live_enabled) return { enabled: false, products: [] as any[], settings: s };
+  const ids = Array.isArray(s.live_featured_product_ids) ? (s.live_featured_product_ids as string[]) : [];
+  if (!ids.length) return { enabled: true, products: [], settings: s };
+  const { data: products } = await supabaseAdmin
+    .from("products")
+    .select("id,name,price,promo_price,image_url,slug")
+    .in("id", ids)
+    .eq("active", true);
+  return { enabled: true, products: products ?? [], settings: s };
+});
+
+// Public approved reviews
+export const getApprovedReviews = createServerFn({ method: "GET" })
+  .inputValidator((d: { product_id?: string; limit?: number } | undefined) =>
+    z.object({ product_id: z.string().uuid().optional(), limit: z.number().int().min(1).max(50).optional() }).parse(d ?? {}),
+  )
+  .handler(async ({ data }) => {
+    let q = supabaseAdmin
+      .from("reviews")
+      .select("id,product_id,author_name,rating,comment,created_at")
+      .eq("status", "approved")
+      .order("created_at", { ascending: false })
+      .limit(data.limit ?? 12);
+    if (data.product_id) q = q.eq("product_id", data.product_id);
+    const { data: rows, error } = await q;
+    if (error) throw new Error(error.message);
+    return rows ?? [];
+  });
 
 export const getPublicProducts = createServerFn({ method: "GET" })
   .inputValidator(

@@ -14,6 +14,8 @@ import { Footer } from "@/components/site/Footer";
 import { DoraFloat } from "@/components/site/DoraFloat";
 import { Marquee } from "@/components/site/Marquee";
 import { Reveal } from "@/components/site/Reveal";
+import { Live } from "@/components/site/Live";
+import { Avaliacoes } from "@/components/site/Avaliacoes";
 import { useGlobalRipple } from "@/hooks/use-global-ripple";
 
 export const Route = createFileRoute("/")({
@@ -48,6 +50,7 @@ function Index() {
       <main>
         <Hero />
         <Marquee />
+        <Reveal as="section"><Live /></Reveal>
         <Reveal as="section"><Beneficios /></Reveal>
         <Reveal as="section" delay={80}><Marcas /></Reveal>
         <Reveal as="section" delay={120}><Categorias /></Reveal>
@@ -55,6 +58,7 @@ function Index() {
         <Reveal as="section" delay={120}><GrupoVip /></Reveal>
         <Reveal as="section" delay={80}><Instagram /></Reveal>
         <Reveal as="section" delay={80}><Depoimentos /></Reveal>
+        <Reveal as="section" delay={80}><Avaliacoes /></Reveal>
         <Reveal as="section" delay={80}><Contato /></Reveal>
       </main>
       <Footer />

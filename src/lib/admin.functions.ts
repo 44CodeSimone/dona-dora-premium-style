@@ -79,6 +79,11 @@ const settingsSchema = z
     payment_methods: z.array(z.string().max(40)).max(20).optional(),
     policies: z.object({ trocas: z.string().max(400).optional(), envio: z.string().max(400).optional(), privacidade: z.string().max(400).optional() }).optional(),
     virtual_tryon_enabled: z.boolean().optional(),
+    live_enabled: z.boolean().optional(),
+    live_url: z.string().url().nullable().optional(),
+    live_title: z.string().max(120).optional(),
+    live_description: z.string().max(400).optional(),
+    live_featured_product_ids: z.array(z.string().uuid()).max(24).optional(),
   })
   .strict();
 
@@ -329,4 +334,66 @@ export const getAdminStats = createServerFn({ method: "GET" })
       tryonSessions: tryons.count ?? 0,
     };
   });
+
+// ------ REVIEWS (admin moderation) ------
+export const listReviewsAdmin = createServerFn({ method: "GET" })
+  .middleware([requireSupabaseAuth])
+  .inputValidator((input: { status?: string } | undefined) =>
+    z.object({ status: z.enum(["pending", "approved", "hidden", "all"]).optional() }).parse(input ?? {}),
+  )
+  .handler(async ({ data, context }) => {
+    await assertAdmin(context.userId);
+    let q = supabaseAdmin
+      .from("reviews")
+      .select("id,product_id,user_id,author_name,rating,comment,status,created_at")
+      .order("created_at", { ascending: false })
+      .limit(500);
+    if (data.status && data.status !== "all") q = q.eq("status", data.status);
+    const { data: rows, error } = await q;
+    if (error) throw new Error(error.message);
+    if (!rows?.length) return [];
+    const productIds = Array.from(new Set(rows.map((r) => r.product_id)));
+    const { data: products } = await supabaseAdmin.from("products").select("id,name").in("id", productIds);
+    const byId = new Map((products ?? []).map((p) => [p.id, p.name]));
+    return rows.map((r) => ({ ...r, product_name: byId.get(r.product_id) ?? "—" }));
+  });
+
+export const updateReviewStatus = createServerFn({ method: "POST" })
+  .middleware([requireSupabaseAuth])
+  .inputValidator((input: { id: string; status: "pending" | "approved" | "hidden" }) =>
+    z.object({ id: z.string().uuid(), status: z.enum(["pending", "approved", "hidden"]) }).parse(input),
+  )
+  .handler(async ({ data, context }) => {
+    await assertAdmin(context.userId);
+    const { error } = await supabaseAdmin
+      .from("reviews")
+      .update({ status: data.status, updated_at: new Date().toISOString() })
+      .eq("id", data.id);
+    if (error) throw new Error(error.message);
+    return { ok: true };
+  });
+
+export const deleteReviewAdmin = createServerFn({ method: "POST" })
+  .middleware([requireSupabaseAuth])
+  .inputValidator((input: { id: string }) => z.object({ id: z.string().uuid() }).parse(input))
+  .handler(async ({ data, context }) => {
+    await assertAdmin(context.userId);
+    const { error } = await supabaseAdmin.from("reviews").delete().eq("id", data.id);
+    if (error) throw new Error(error.message);
+    return { ok: true };
+  });
+
+export const listProductsLite = createServerFn({ method: "GET" })
+  .middleware([requireSupabaseAuth])
+  .handler(async ({ context }) => {
+    await assertAdmin(context.userId);
+    const { data, error } = await supabaseAdmin
+      .from("products")
+      .select("id,name")
+      .eq("active", true)
+      .order("name", { ascending: true });
+    if (error) throw new Error(error.message);
+    return data ?? [];
+  });
+
 
