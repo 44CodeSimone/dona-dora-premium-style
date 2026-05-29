@@ -73,7 +73,7 @@ export function Hero() {
           style={{ animationDelay: "0.7s" }}
         >
           {[
-            ["Desde", "Urubici / SC"],
+            ["Localização", "Urubici · SC"],
             ["Curadoria", "Premium & exclusiva"],
             ["Atendimento", "Próximo e humano"],
             ["Estilo", "Feminino · Masculino"],
