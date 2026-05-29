@@ -15,8 +15,8 @@ export function Beneficios() {
         {items.slice(0, 4).map((b, i) => {
           const Icon = ICONS[i] ?? BadgeCheck;
           return (
-            <div key={i} className="flex flex-col items-center text-center gap-3 p-4">
-              <div className="size-12 rounded-full grid place-items-center bg-foreground text-background">
+            <div key={i} className="benefit-card flex flex-col items-center text-center gap-3 p-4">
+              <div className="benefit-icon size-12 rounded-full grid place-items-center bg-foreground text-background">
                 <Icon className="size-5" strokeWidth={1.5} />
               </div>
               <div>
