@@ -51,6 +51,10 @@ import {
   updateOrderStatus,
   getAdminStats,
   getAdminSiteSettings,
+  listReviewsAdmin,
+  updateReviewStatus,
+  deleteReviewAdmin,
+  listProductsLite,
 } from "@/lib/admin.functions";
 import { toast } from "sonner";
 
