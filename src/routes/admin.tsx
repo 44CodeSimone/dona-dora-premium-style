@@ -1206,3 +1206,135 @@ function StoreSettingsTab() {
     </div>
   );
 }
+
+// ============ LIVE TAB ============
+function LiveTab() {
+  const qc = useQueryClient();
+  const { data: s } = useQuery({ queryKey: ["admin-settings"], queryFn: () => useServerFn(getAdminSiteSettings)() });
+  const { data: products = [] } = useQuery({ queryKey: ["admin-products-lite"], queryFn: () => useServerFn(listProductsLite)() });
+  const saveFn = useServerFn(updateSiteSettings);
+  const [form, setForm] = useState<any>(null);
+  useEffect(() => {
+    if (s && !form) {
+      setForm({
+        live_enabled: !!s.live_enabled,
+        live_url: s.live_url ?? "",
+        live_title: s.live_title ?? "Live Dona Dora",
+        live_description: s.live_description ?? "",
+        live_featured_product_ids: Array.isArray(s.live_featured_product_ids) ? s.live_featured_product_ids : [],
+      });
+    }
+  }, [s, form]);
+  const mut = useMutation({
+    mutationFn: (v: any) => saveFn({ data: v }),
+    onSuccess: () => { toast.success("Live atualizada."); qc.invalidateQueries({ queryKey: ["admin-settings"] }); qc.invalidateQueries({ queryKey: ["live"] }); qc.invalidateQueries({ queryKey: ["site-settings"] }); },
+    onError: (e: any) => toast.error(e?.message ?? "Erro"),
+  });
+  if (!form) return <div className="py-12 text-muted-foreground">Carregando…</div>;
+  const toggle = (id: string) => {
+    const has = form.live_featured_product_ids.includes(id);
+    setForm({ ...form, live_featured_product_ids: has ? form.live_featured_product_ids.filter((x: string) => x !== id) : [...form.live_featured_product_ids, id].slice(0, 24) });
+  };
+  return (
+    <div className="space-y-5 py-6 max-w-3xl">
+      <div className="flex items-center justify-between p-4 border rounded">
+        <div>
+          <div className="font-medium">Live ativa</div>
+          <div className="text-xs text-muted-foreground">Quando ativada, aparece no site público.</div>
+        </div>
+        <Switch checked={form.live_enabled} onCheckedChange={(v) => setForm({ ...form, live_enabled: v })} />
+      </div>
+      <div>
+        <Label>URL da live (YouTube ou Instagram)</Label>
+        <Input value={form.live_url} onChange={(e) => setForm({ ...form, live_url: e.target.value })} placeholder="https://www.youtube.com/watch?v=..." />
+      </div>
+      <div>
+        <Label>Título</Label>
+        <Input maxLength={120} value={form.live_title} onChange={(e) => setForm({ ...form, live_title: e.target.value })} />
+      </div>
+      <div>
+        <Label>Descrição curta</Label>
+        <Textarea maxLength={400} rows={3} value={form.live_description} onChange={(e) => setForm({ ...form, live_description: e.target.value })} />
+      </div>
+      <div>
+        <Label>Produtos em destaque ({form.live_featured_product_ids.length}/24)</Label>
+        <div className="grid sm:grid-cols-2 gap-2 max-h-80 overflow-y-auto border rounded p-3 mt-1">
+          {(products as any[]).map((p) => (
+            <label key={p.id} className="flex items-center gap-2 text-sm">
+              <input type="checkbox" checked={form.live_featured_product_ids.includes(p.id)} onChange={() => toggle(p.id)} />
+              <span className="truncate">{p.name}</span>
+            </label>
+          ))}
+        </div>
+      </div>
+      <Button onClick={() => mut.mutate(form)} disabled={mut.isPending}>{mut.isPending ? "Salvando…" : "Salvar"}</Button>
+    </div>
+  );
+}
+
+// ============ REVIEWS TAB ============
+function ReviewsTab() {
+  const qc = useQueryClient();
+  const [status, setStatus] = useState<"pending" | "approved" | "hidden" | "all">("pending");
+  const listFn = useServerFn(listReviewsAdmin);
+  const updFn = useServerFn(updateReviewStatus);
+  const delFn = useServerFn(deleteReviewAdmin);
+  const { data: reviews = [] } = useQuery({
+    queryKey: ["admin-reviews", status],
+    queryFn: () => listFn({ data: { status } }),
+  });
+  const upd = useMutation({
+    mutationFn: (v: { id: string; status: "pending" | "approved" | "hidden" }) => updFn({ data: v }),
+    onSuccess: () => { toast.success("Atualizada."); qc.invalidateQueries({ queryKey: ["admin-reviews"] }); qc.invalidateQueries({ queryKey: ["reviews"] }); },
+    onError: (e: any) => toast.error(e?.message ?? "Erro"),
+  });
+  const del = useMutation({
+    mutationFn: (id: string) => delFn({ data: { id } }),
+    onSuccess: () => { toast.success("Excluída."); qc.invalidateQueries({ queryKey: ["admin-reviews"] }); qc.invalidateQueries({ queryKey: ["reviews"] }); },
+  });
+  return (
+    <div className="space-y-4 py-6">
+      <div className="flex gap-2">
+        {(["pending", "approved", "hidden", "all"] as const).map((k) => (
+          <Button key={k} size="sm" variant={status === k ? "default" : "outline"} onClick={() => setStatus(k)}>
+            {k === "pending" ? "Pendentes" : k === "approved" ? "Aprovadas" : k === "hidden" ? "Ocultas" : "Todas"}
+          </Button>
+        ))}
+      </div>
+      {(reviews as any[]).length === 0 ? (
+        <p className="text-muted-foreground py-12 text-center">Nenhuma avaliação.</p>
+      ) : (
+        <Table>
+          <TableHeader>
+            <TableRow>
+              <TableHead>Produto</TableHead>
+              <TableHead>Autor</TableHead>
+              <TableHead>Nota</TableHead>
+              <TableHead>Comentário</TableHead>
+              <TableHead>Status</TableHead>
+              <TableHead>Ações</TableHead>
+            </TableRow>
+          </TableHeader>
+          <TableBody>
+            {(reviews as any[]).map((r) => (
+              <TableRow key={r.id}>
+                <TableCell className="font-medium">{r.product_name}</TableCell>
+                <TableCell>{r.author_name}</TableCell>
+                <TableCell>{r.rating}★</TableCell>
+                <TableCell className="max-w-md"><div className="line-clamp-3 text-sm">{r.comment}</div></TableCell>
+                <TableCell><Badge variant={r.status === "approved" ? "default" : r.status === "hidden" ? "secondary" : "outline"}>{r.status}</Badge></TableCell>
+                <TableCell>
+                  <div className="flex gap-1">
+                    {r.status !== "approved" && <Button size="sm" variant="outline" onClick={() => upd.mutate({ id: r.id, status: "approved" })}>Aprovar</Button>}
+                    {r.status !== "hidden" && <Button size="sm" variant="outline" onClick={() => upd.mutate({ id: r.id, status: "hidden" })}>Ocultar</Button>}
+                    <Button size="sm" variant="destructive" onClick={() => { if (confirm("Excluir esta avaliação?")) del.mutate(r.id); }}><Trash2 className="size-3" /></Button>
+                  </div>
+                </TableCell>
+              </TableRow>
+            ))}
+          </TableBody>
+        </Table>
+      )}
+    </div>
+  );
+}
