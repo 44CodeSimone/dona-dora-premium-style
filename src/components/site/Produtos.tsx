@@ -173,7 +173,7 @@ export function Produtos() {
               const lowStock = !outOfStock && p.stock != null && p.stock <= 3;
               return (
                 <div key={p.id} className="group flex flex-col">
-                  <div className="img-zoom relative aspect-[3/4] bg-muted overflow-hidden">
+                  <div className="img-zoom card-touch relative aspect-[3/4] bg-muted overflow-hidden">
                     <img
                       src={img}
                       alt={p.alt_text || p.name}
