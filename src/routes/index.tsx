@@ -14,6 +14,8 @@ import { Footer } from "@/components/site/Footer";
 import { DoraFloat } from "@/components/site/DoraFloat";
 import { Marquee } from "@/components/site/Marquee";
 import { Reveal } from "@/components/site/Reveal";
+import { Live } from "@/components/site/Live";
+import { Avaliacoes } from "@/components/site/Avaliacoes";
 import { useGlobalRipple } from "@/hooks/use-global-ripple";
 
 export const Route = createFileRoute("/")({
