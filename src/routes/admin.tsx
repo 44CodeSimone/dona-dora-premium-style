@@ -1210,8 +1210,10 @@ function StoreSettingsTab() {
 // ============ LIVE TAB ============
 function LiveTab() {
   const qc = useQueryClient();
-  const { data: s } = useQuery({ queryKey: ["admin-settings"], queryFn: () => useServerFn(getAdminSiteSettings)() });
-  const { data: products = [] } = useQuery({ queryKey: ["admin-products-lite"], queryFn: () => useServerFn(listProductsLite)() });
+  const getSettings = useServerFn(getAdminSiteSettings);
+  const getProds = useServerFn(listProductsLite);
+  const { data: s } = useQuery({ queryKey: ["admin-settings"], queryFn: () => getSettings() });
+  const { data: products = [] } = useQuery({ queryKey: ["admin-products-lite"], queryFn: () => getProds() });
   const saveFn = useServerFn(updateSiteSettings);
   const [form, setForm] = useState<any>(null);
   useEffect(() => {
