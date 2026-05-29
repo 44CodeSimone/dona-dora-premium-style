@@ -1,12 +1,13 @@
 import { useEffect, useMemo, useState } from "react";
 import { useQuery } from "@tanstack/react-query";
-import { MessageCircle, Search, ShoppingBag } from "lucide-react";
+import { MessageCircle, Search, ShoppingBag, Sparkles } from "lucide-react";
 import { getPublicProducts } from "@/lib/site.functions";
 import { useSiteSettings } from "@/hooks/use-site-settings";
 import { useCart } from "@/hooks/use-cart";
 import { Skeleton } from "@/components/ui/skeleton";
 import { Input } from "@/components/ui/input";
 import { toast } from "sonner";
+import { VirtualTryOnModal } from "@/components/site/VirtualTryOnModal";
 import fem from "@/assets/category-feminina.jpg";
 import masc from "@/assets/category-masculina.jpg";
 import acc from "@/assets/category-accessories.jpg";
