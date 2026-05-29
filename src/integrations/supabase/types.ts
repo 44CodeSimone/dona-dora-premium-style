@@ -345,6 +345,50 @@ export type Database = {
         }
         Relationships: []
       }
+      reviews: {
+        Row: {
+          author_name: string
+          comment: string
+          created_at: string
+          id: string
+          product_id: string
+          rating: number
+          status: string
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          author_name: string
+          comment: string
+          created_at?: string
+          id?: string
+          product_id: string
+          rating: number
+          status?: string
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          author_name?: string
+          comment?: string
+          created_at?: string
+          id?: string
+          product_id?: string
+          rating?: number
+          status?: string
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "reviews_product_id_fkey"
+            columns: ["product_id"]
+            isOneToOne: false
+            referencedRelation: "products"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       site_settings: {
         Row: {
           accent_color: string
@@ -366,6 +410,11 @@ export type Database = {
           instagram_handle: string
           instagram_url: string
           lead_email: string
+          live_description: string
+          live_enabled: boolean
+          live_featured_product_ids: Json
+          live_title: string
+          live_url: string | null
           logo_url: string | null
           payment_methods: Json
           policies: Json
@@ -406,6 +455,11 @@ export type Database = {
           instagram_handle?: string
           instagram_url?: string
           lead_email?: string
+          live_description?: string
+          live_enabled?: boolean
+          live_featured_product_ids?: Json
+          live_title?: string
+          live_url?: string | null
           logo_url?: string | null
           payment_methods?: Json
           policies?: Json
@@ -446,6 +500,11 @@ export type Database = {
           instagram_handle?: string
           instagram_url?: string
           lead_email?: string
+          live_description?: string
+          live_enabled?: boolean
+          live_featured_product_ids?: Json
+          live_title?: string
+          live_url?: string | null
           logo_url?: string | null
           payment_methods?: Json
           policies?: Json
