@@ -182,9 +182,74 @@
     display: flex;
     gap: 4rem;
     animation: marquee 40s linear infinite;
+    width: max-content;
   }
   @keyframes marquee {
     from { transform: translateX(0); }
     to { transform: translateX(-50%); }
   }
+
+  /* Reveal on scroll */
+  .reveal {
+    opacity: 0;
+    transform: translateY(20px);
+    transition: opacity 0.9s var(--ease-luxe), transform 0.9s var(--ease-luxe);
+    will-change: opacity, transform;
+  }
+  .reveal-in {
+    opacity: 1;
+    transform: translateY(0);
+  }
+
+  /* Ripple effect (injected globally via useGlobalRipple) */
+  .lv-ripple {
+    position: absolute;
+    border-radius: 9999px;
+    pointer-events: none;
+    background: radial-gradient(circle, rgba(255,255,255,0.45) 0%, rgba(255,255,255,0) 70%);
+    transform: scale(0);
+    animation: lv-ripple-anim 0.55s var(--ease-luxe) forwards;
+  }
+  @keyframes lv-ripple-anim {
+    to { transform: scale(2.4); opacity: 0; }
+  }
+
+  /* Card touch / active light */
+  .card-touch {
+    position: relative;
+    transition: transform 0.35s var(--ease-luxe), box-shadow 0.35s var(--ease-luxe);
+  }
+  .card-touch::after {
+    content: "";
+    position: absolute;
+    inset: 0;
+    pointer-events: none;
+    background: radial-gradient(circle at var(--tx,50%) var(--ty,50%), rgba(255,255,255,0.22) 0%, rgba(255,255,255,0) 60%);
+    opacity: 0;
+    transition: opacity 0.4s var(--ease-luxe);
+  }
+  .card-touch:active::after { opacity: 1; }
+  .card-touch:hover { box-shadow: var(--shadow-luxe); }
+  .card-touch:hover img { transform: scale(1.03); }
+
+  /* Benefit card hover lift */
+  .benefit-card {
+    transition: transform 0.25s var(--ease-luxe), box-shadow 0.25s var(--ease-luxe);
+    border-radius: 8px;
+  }
+  .benefit-card:hover {
+    transform: translateY(-4px);
+    box-shadow: 0 10px 28px -16px oklch(0.18 0.01 60 / 0.25);
+  }
+  .benefit-card:hover .benefit-icon {
+    box-shadow: 0 0 0 6px oklch(0.78 0.09 80 / 0.18);
+  }
+  .benefit-icon { transition: box-shadow 0.25s var(--ease-luxe); }
+
+  /* Live badge pulse */
+  @keyframes live-pulse {
+    0%,100% { box-shadow: 0 0 0 0 rgba(239,68,68,0.55); }
+    50% { box-shadow: 0 0 0 10px rgba(239,68,68,0); }
+  }
+  .live-badge { animation: live-pulse 1.6s ease-in-out infinite; }
 }
