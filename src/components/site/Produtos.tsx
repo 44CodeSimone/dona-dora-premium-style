@@ -1,12 +1,13 @@
 import { useEffect, useMemo, useState } from "react";
 import { useQuery } from "@tanstack/react-query";
-import { MessageCircle, Search, ShoppingBag } from "lucide-react";
+import { MessageCircle, Search, ShoppingBag, Sparkles } from "lucide-react";
 import { getPublicProducts } from "@/lib/site.functions";
 import { useSiteSettings } from "@/hooks/use-site-settings";
 import { useCart } from "@/hooks/use-cart";
 import { Skeleton } from "@/components/ui/skeleton";
 import { Input } from "@/components/ui/input";
 import { toast } from "sonner";
+import { VirtualTryOnModal } from "@/components/site/VirtualTryOnModal";
 import fem from "@/assets/category-feminina.jpg";
 import masc from "@/assets/category-masculina.jpg";
 import acc from "@/assets/category-accessories.jpg";
@@ -46,6 +47,7 @@ export function Produtos() {
   const [onlyFeatured, setOnlyFeatured] = useState(false);
   const [search, setSearch] = useState("");
   const [debounced, setDebounced] = useState("");
+  const [tryOnProduct, setTryOnProduct] = useState<any | null>(null);
   const cart = useCart();
 
   useEffect(() => {
@@ -244,12 +246,24 @@ export function Produtos() {
                       <MessageCircle className="size-4" />
                     </a>
                   </div>
+                  {settings?.virtual_tryon_enabled && p.allow_virtual_try_on && !outOfStock && (
+                    <button
+                      onClick={() => setTryOnProduct(p)}
+                      className="mt-3 inline-flex items-center justify-center gap-2 px-4 py-2.5 border border-foreground/20 hover:border-[color:var(--gold)] hover:text-[color:var(--gold)] text-[11px] tracking-luxe uppercase transition-colors"
+                    >
+                      <Sparkles className="size-3.5" />
+                      Provador Virtual
+                    </button>
+                  )}
                 </div>
               );
             })}
           </div>
         )}
       </div>
+      {tryOnProduct && (
+        <VirtualTryOnModal product={tryOnProduct} onClose={() => setTryOnProduct(null)} />
+      )}
     </section>
   );
 }
