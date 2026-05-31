@@ -99,13 +99,26 @@ export function DoraFloat() {
             {phase === "chat" && (
               <>
                 <div ref={scrollRef} className="flex-1 overflow-y-auto px-4 py-5 space-y-3 bg-muted/30">
-                  {messages.map((m, i) => (
-                    <div key={i} className={`flex ${m.role === "user" ? "justify-end" : "justify-start"}`}>
-                      <div className={`max-w-[85%] px-4 py-2.5 rounded-2xl text-sm whitespace-pre-wrap ${m.role === "user" ? "bg-foreground text-background rounded-br-sm" : "bg-card border rounded-bl-sm"}`}>
-                        {m.content}
+                  {messages.map((m, i) => {
+                    const parsed = m.role === "assistant" ? parseWhatsAppLinks(m.content, whatsapp) : { text: m.content, hasWhats: false, waUrl: "" };
+                    return (
+                      <div key={i} className={`flex ${m.role === "user" ? "justify-end" : "justify-start"}`}>
+                        <div className={`max-w-[85%] px-4 py-2.5 rounded-2xl text-sm ${m.role === "user" ? "bg-foreground text-background rounded-br-sm" : "bg-card border rounded-bl-sm"}`}>
+                          <div className="whitespace-pre-wrap">{parsed.text}</div>
+                          {parsed.hasWhats && (
+                            <a
+                              href={parsed.waUrl}
+                              target="_blank"
+                              rel="noreferrer"
+                              className="mt-2 inline-flex items-center gap-2 px-3 py-2 bg-emerald-600 hover:bg-emerald-700 text-white text-[11px] tracking-luxe uppercase rounded transition"
+                            >
+                              <MessageCircle className="size-3.5" /> Falar no WhatsApp
+                            </a>
+                          )}
+                        </div>
                       </div>
-                    </div>
-                  ))}
+                    );
+                  })}
                   {sending && <div className="text-xs text-muted-foreground px-2">Dora está digitando…</div>}
                 </div>
                 <div className="border-t p-3 bg-background">
