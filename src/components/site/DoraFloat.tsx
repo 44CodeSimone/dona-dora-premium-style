@@ -19,6 +19,18 @@ function getSessionId() {
   return s;
 }
 
+
+function parseWhatsAppLinks(text: string, fallbackNumber: string) {
+  const re = /https?:\/\/(?:wa\.me\/(\d+)(?:\?text=([^\s)]*))?|(?:api\.)?whatsapp\.com\/send\/?\?[^\s)]*phone=(\d+)(?:[^\s)]*text=([^\s&)]*))?[^\s)]*)/i;
+  const m = text.match(re);
+  if (!m) return { text, hasWhats: false, waUrl: "" };
+  const number = m[1] || m[3] || fallbackNumber;
+  const msg = m[2] || m[4] || encodeURIComponent("Oi Dona Dora! Vim pelo site ✨");
+  const waUrl = `https://wa.me/${number}?text=${msg}`;
+  const cleaned = text.replace(re, "").replace(/\s{2,}/g, " ").trim();
+  return { text: cleaned, hasWhats: true, waUrl };
+}
+
 export function DoraFloat() {
   const { data: settings } = useSiteSettings();
   const [open, setOpen] = useState(false);
