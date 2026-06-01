@@ -259,10 +259,11 @@ export function VirtualTryOnModal({ product, onClose }: { product: Product; onCl
                     ) : (
                       <button
                         onClick={() => inputRef.current?.click()}
-                        className="mt-2 w-full aspect-[3/4] border border-dashed border-foreground/25 flex flex-col items-center justify-center gap-2 text-sm text-muted-foreground hover:border-foreground/50 transition"
+                        className="mt-2 w-full aspect-[3/4] border border-dashed border-foreground/25 flex flex-col items-center justify-center gap-2 px-4 text-center text-sm text-muted-foreground hover:border-foreground/50 transition"
                       >
                         <Upload className="size-5" />
-                        Enviar foto (até 8MB)
+                        <span>Envie uma foto sua de frente</span>
+                        <span className="text-[10px] tracking-luxe uppercase">rosto visível · boa iluminação · até 8MB</span>
                       </button>
                     )}
                   </div>
