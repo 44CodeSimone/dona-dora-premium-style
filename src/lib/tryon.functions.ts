@@ -102,6 +102,7 @@ export const submitTryOn = createServerFn({ method: "POST" })
   .inputValidator((input) => submitSchema.parse(input))
   .handler(async ({ data, context }) => {
     const { userId } = context;
+    let providerPreviewUrl: string | null = null;
 
     // Toggle global
     const { data: settings } = await supabaseAdmin
@@ -153,6 +154,8 @@ export const submitTryOn = createServerFn({ method: "POST" })
       .single();
     if (sErr || !session) throw new Error("Falha ao criar sessão.");
 
+    console.info("[tryon] technical intent", JSON.stringify({ session_id: session.id, ...TECHNICAL_INTENT }));
+
     // Signed URLs para o provedor consumir
     const { data: origSigned } = await supabaseAdmin.storage
       .from("virtual-tryon")
@@ -170,8 +173,8 @@ export const submitTryOn = createServerFn({ method: "POST" })
     }
 
     const result = await callProvider({
-      model_image_url: origSigned.signedUrl,
-      garment_image_url: garmentImageUrl,
+      customer_image_url: origSigned.signedUrl,
+      store_garment_image_url: garmentImageUrl,
       category: mapCategory(product.category),
     });
 
@@ -182,6 +185,8 @@ export const submitTryOn = createServerFn({ method: "POST" })
         .eq("id", session.id);
       return { id: session.id, status: "failed" as const, error: result.error };
     }
+
+    providerPreviewUrl = result.image_url;
 
     // Baixa imagem gerada e guarda no bucket privado
     let storedPath: string | null = null;
@@ -211,7 +216,7 @@ export const submitTryOn = createServerFn({ method: "POST" })
       })
       .eq("id", session.id);
 
-    return { id: session.id, status: "completed" as const };
+    return { id: session.id, status: "completed" as const, preview_url: storedPath ? null : providerPreviewUrl };
   });
 
 export const getMyTryOnSession = createServerFn({ method: "POST" })
