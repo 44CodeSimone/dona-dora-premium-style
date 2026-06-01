@@ -3,14 +3,33 @@ import { z } from "zod";
 import { requireSupabaseAuth } from "@/integrations/supabase/auth-middleware";
 import { supabaseAdmin } from "@/integrations/supabase/client.server";
 
-// Centralized provider integration point. Swap the URL/payload here if the
-// vendor or model changes — the rest of the app does not need to know.
-const PROVIDER_URL = "https://fal.run/fal-ai/fashn/tryon";
+const PROVIDER_URL = "https://fal.run/fal-ai/fashn/tryon/v1.6";
+
+const TECHNICAL_INTENT = {
+  base_image_role: "customer_photo",
+  garment_image_role: "store_garment",
+  final_result_expected: "same_customer_wearing_selected_store_garment",
+  must_preserve: [
+    "customer_face",
+    "customer_hair",
+    "customer_skin_tone",
+    "customer_expression",
+    "customer_identity",
+    "customer_body_proportions",
+  ],
+  must_not: [
+    "use_store_model_as_final_person",
+    "replace_customer_face",
+    "change_identity",
+    "beautify_artificially",
+    "reshape_body_unrealistically",
+  ],
+} as const;
 
 async function callProvider(args: {
-  model_image_url: string;
-  garment_image_url: string;
-  category: "tops" | "bottoms" | "one-pieces";
+  customer_image_url: string;
+  store_garment_image_url: string;
+  category: "tops" | "bottoms" | "one-pieces" | "auto";
 }): Promise<{ image_url: string } | { error: string }> {
   const key = process.env.VIRTUAL_TRY_ON_API_KEY;
   if (!key) return { error: "VIRTUAL_TRY_ON_API_KEY ausente no servidor." };
@@ -22,15 +41,21 @@ async function callProvider(args: {
         Authorization: `Key ${key}`,
       },
       body: JSON.stringify({
-        model_image: args.model_image_url,
-        garment_image: args.garment_image_url,
+        model_image: args.customer_image_url,
+        garment_image: args.store_garment_image_url,
         category: args.category,
+        mode: "balanced",
+        garment_photo_type: "auto",
+        moderation_level: "permissive",
+        num_samples: 1,
+        segmentation_free: true,
+        output_format: "png",
       }),
     });
     const text = await res.text();
     if (!res.ok) {
       console.error("[tryon] provider error", res.status, text.slice(0, 500));
-      return { error: `Provider ${res.status}` };
+      return { error: `Provider ${res.status}: ${text.slice(0, 180)}` };
     }
     let json: any;
     try {
@@ -56,11 +81,12 @@ async function callProvider(args: {
   }
 }
 
-function mapCategory(productCategory?: string | null): "tops" | "bottoms" | "one-pieces" {
+function mapCategory(productCategory?: string | null): "tops" | "bottoms" | "one-pieces" | "auto" {
   const c = (productCategory ?? "").toLowerCase();
   if (c.includes("calc") || c.includes("short") || c.includes("saia")) return "bottoms";
   if (c.includes("vestid") || c.includes("macac")) return "one-pieces";
-  return "tops";
+  if (c.includes("blusa") || c.includes("camisa") || c.includes("cropped") || c.includes("jaqueta")) return "tops";
+  return "auto";
 }
 
 const submitSchema = z.object({
@@ -76,6 +102,7 @@ export const submitTryOn = createServerFn({ method: "POST" })
   .inputValidator((input) => submitSchema.parse(input))
   .handler(async ({ data, context }) => {
     const { userId } = context;
+    let providerPreviewUrl: string | null = null;
 
     // Toggle global
     const { data: settings } = await supabaseAdmin
@@ -127,6 +154,8 @@ export const submitTryOn = createServerFn({ method: "POST" })
       .single();
     if (sErr || !session) throw new Error("Falha ao criar sessão.");
 
+    console.info("[tryon] technical intent", JSON.stringify({ session_id: session.id, ...TECHNICAL_INTENT }));
+
     // Signed URLs para o provedor consumir
     const { data: origSigned } = await supabaseAdmin.storage
       .from("virtual-tryon")
@@ -144,8 +173,8 @@ export const submitTryOn = createServerFn({ method: "POST" })
     }
 
     const result = await callProvider({
-      model_image_url: origSigned.signedUrl,
-      garment_image_url: garmentImageUrl,
+      customer_image_url: origSigned.signedUrl,
+      store_garment_image_url: garmentImageUrl,
       category: mapCategory(product.category),
     });
 
@@ -156,6 +185,8 @@ export const submitTryOn = createServerFn({ method: "POST" })
         .eq("id", session.id);
       return { id: session.id, status: "failed" as const, error: result.error };
     }
+
+    providerPreviewUrl = result.image_url;
 
     // Baixa imagem gerada e guarda no bucket privado
     let storedPath: string | null = null;
@@ -185,7 +216,7 @@ export const submitTryOn = createServerFn({ method: "POST" })
       })
       .eq("id", session.id);
 
-    return { id: session.id, status: "completed" as const };
+    return { id: session.id, status: "completed" as const, preview_url: storedPath ? null : providerPreviewUrl };
   });
 
 export const getMyTryOnSession = createServerFn({ method: "POST" })

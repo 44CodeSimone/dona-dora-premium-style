@@ -1,7 +1,7 @@
 import { useEffect, useRef, useState } from "react";
 import { useServerFn } from "@tanstack/react-start";
 import { useNavigate } from "@tanstack/react-router";
-import { Sparkles, Upload, X, Loader2, CheckCircle2, AlertCircle } from "lucide-react";
+import { Sparkles, Upload, X, Loader2, CheckCircle2, AlertCircle, ExternalLink, Download } from "lucide-react";
 import { toast } from "sonner";
 import { supabase } from "@/integrations/supabase/client";
 import { submitTryOn, getMyTryOnSession } from "@/lib/tryon.functions";
@@ -38,6 +38,7 @@ export function VirtualTryOnModal({ product, onClose }: { product: Product; onCl
   const [status, setStatus] = useState<"idle" | "uploading" | "processing" | "completed" | "failed">("idle");
   const [resultUrl, setResultUrl] = useState<string | null>(null);
   const [errorMsg, setErrorMsg] = useState<string | null>(null);
+  const [zoomOpen, setZoomOpen] = useState(false);
   const inputRef = useRef<HTMLInputElement>(null);
 
   useEffect(() => {
@@ -101,7 +102,12 @@ export function VirtualTryOnModal({ product, onClose }: { product: Product; onCl
         return;
       }
 
-      // Buscar URL assinada
+      if ("preview_url" in res && res.preview_url) {
+        setResultUrl(res.preview_url);
+        setStatus("completed");
+        return;
+      }
+
       const sess = await getFn({ data: { id: res.id } });
       if (sess.signed_url) {
         setResultUrl(sess.signed_url);
@@ -139,6 +145,35 @@ export function VirtualTryOnModal({ product, onClose }: { product: Product; onCl
     onClose();
   }
 
+  function resetTryOn() {
+    setResultUrl(null);
+    setStatus("idle");
+    setErrorMsg(null);
+    setZoomOpen(false);
+  }
+
+  function openImage() {
+    if (!resultUrl) return;
+    window.open(resultUrl, "_blank", "noopener,noreferrer");
+  }
+
+  function downloadImage() {
+    if (!resultUrl) return;
+    fetch(resultUrl)
+      .then((res) => res.blob())
+      .then((blob) => {
+        const url = URL.createObjectURL(blob);
+        const a = document.createElement("a");
+        a.href = url;
+        a.download = `provador-${product.name.toLowerCase().replace(/[^a-z0-9]+/gi, "-")}.png`;
+        document.body.appendChild(a);
+        a.click();
+        document.body.removeChild(a);
+        URL.revokeObjectURL(url);
+      })
+      .catch(() => openImage());
+  }
+
   // Bloqueia scroll do body
   useEffect(() => {
     const prev = document.body.style.overflow;
@@ -149,17 +184,18 @@ export function VirtualTryOnModal({ product, onClose }: { product: Product; onCl
   }, []);
 
   return (
-    <div className="fixed inset-0 z-[100] flex items-center justify-center p-4 md:p-8 bg-foreground/60 backdrop-blur-sm">
-      <div className="relative w-full max-w-3xl max-h-[92vh] overflow-auto bg-background border border-foreground/10 shadow-2xl">
+    <div className="fixed inset-0 z-[100] bg-foreground/60 backdrop-blur-sm">
+      <div className="flex min-h-dvh items-center justify-center p-3 md:p-6">
+      <div className="relative flex w-full max-w-4xl max-h-[92vh] flex-col overflow-hidden bg-background border border-foreground/10 shadow-2xl">
         <button
           onClick={onClose}
-          className="absolute top-3 right-3 p-2 text-muted-foreground hover:text-foreground"
+          className="absolute top-3 right-3 z-10 p-2 bg-background/90 text-muted-foreground hover:text-foreground"
           aria-label="Fechar"
         >
           <X className="size-5" />
         </button>
 
-        <div className="p-6 md:p-10">
+        <div className="overflow-y-auto p-5 md:p-8">
           <div className="flex items-center gap-3 mb-6">
             <Sparkles className="size-5 text-[color:var(--gold)]" />
             <h2 className="font-display text-2xl md:text-3xl">Provador Virtual</h2>
@@ -171,7 +207,7 @@ export function VirtualTryOnModal({ product, onClose }: { product: Product; onCl
                 <img
                   src={product.image_url || product.images?.[0] || ""}
                   alt={product.name}
-                  className="size-full object-cover"
+                  className="size-full object-contain"
                 />
               </div>
               <p className="text-xs tracking-luxe uppercase text-muted-foreground">Peça</p>
@@ -194,28 +230,41 @@ export function VirtualTryOnModal({ product, onClose }: { product: Product; onCl
                   <div className="flex items-center gap-2 text-sm text-emerald-700 dark:text-emerald-400">
                     <CheckCircle2 className="size-4" /> Prévia gerada
                   </div>
-                  <div className="aspect-[3/4] bg-muted overflow-hidden">
-                    <img src={resultUrl} alt="Resultado" className="size-full object-cover" />
+                  <div
+                    className="aspect-[3/4] bg-muted overflow-hidden cursor-zoom-in"
+                    onClick={() => setZoomOpen(true)}
+                  >
+                    <img src={resultUrl} alt="Resultado" className="size-full object-contain" />
                   </div>
                   <p className="text-[11px] text-muted-foreground">
                     Simulação aproximada. A peça real pode apresentar pequenas variações.
                   </p>
-                  <div className="flex gap-2">
+                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
                     <button
-                      onClick={addToCart}
-                      className="flex-1 px-4 py-3 bg-foreground text-background text-[11px] tracking-luxe uppercase"
+                      onClick={openImage}
+                      className="px-4 py-3 border border-foreground/20 text-[11px] tracking-luxe uppercase inline-flex items-center justify-center gap-2"
                     >
-                      Adicionar à sacola
+                      <ExternalLink className="size-4" />
+                      Abrir imagem
                     </button>
                     <button
-                      onClick={() => {
-                        setResultUrl(null);
-                        setStatus("idle");
-                        setFile(null);
-                      }}
+                      onClick={downloadImage}
+                      className="px-4 py-3 border border-foreground/20 text-[11px] tracking-luxe uppercase inline-flex items-center justify-center gap-2"
+                    >
+                      <Download className="size-4" />
+                      Baixar imagem
+                    </button>
+                    <button
+                      onClick={resetTryOn}
                       className="px-4 py-3 border border-foreground/20 text-[11px] tracking-luxe uppercase"
                     >
-                      Outra foto
+                      Tentar novamente
+                    </button>
+                    <button
+                      onClick={addToCart}
+                      className="px-4 py-3 bg-foreground text-background text-[11px] tracking-luxe uppercase"
+                    >
+                      Adicionar à sacola
                     </button>
                   </div>
                 </div>
@@ -226,8 +275,7 @@ export function VirtualTryOnModal({ product, onClose }: { product: Product; onCl
                   </div>
                   <button
                     onClick={() => {
-                      setStatus("idle");
-                      setErrorMsg(null);
+                        resetTryOn();
                     }}
                     className="px-4 py-3 border border-foreground/20 text-[11px] tracking-luxe uppercase"
                   >
@@ -247,7 +295,7 @@ export function VirtualTryOnModal({ product, onClose }: { product: Product; onCl
                     />
                     {preview ? (
                       <div className="mt-2 relative aspect-[3/4] bg-muted overflow-hidden">
-                        <img src={preview} alt="Sua foto" className="size-full object-cover" />
+                        <img src={preview} alt="Sua foto" className="size-full object-contain" />
                         <button
                           onClick={() => setFile(null)}
                           className="absolute top-2 right-2 p-1.5 bg-background/90 text-foreground"
@@ -335,6 +383,26 @@ export function VirtualTryOnModal({ product, onClose }: { product: Product; onCl
           </div>
         </div>
       </div>
+      </div>
+
+      {zoomOpen && resultUrl ? (
+        <div className="fixed inset-0 z-[110] bg-foreground/85 p-3 md:p-6" onClick={() => setZoomOpen(false)}>
+          <button
+            onClick={() => setZoomOpen(false)}
+            className="absolute top-3 right-3 z-10 p-2 bg-background/90 text-foreground"
+            aria-label="Fechar imagem ampliada"
+          >
+            <X className="size-5" />
+          </button>
+          <div className="flex h-full items-center justify-center">
+            <img
+              src={resultUrl}
+              alt="Resultado ampliado do provador virtual"
+              className="max-h-full max-w-full object-contain"
+            />
+          </div>
+        </div>
+      ) : null}
     </div>
   );
 }
