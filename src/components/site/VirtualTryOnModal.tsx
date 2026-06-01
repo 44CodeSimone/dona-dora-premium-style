@@ -159,12 +159,19 @@ export function VirtualTryOnModal({ product, onClose }: { product: Product; onCl
 
   function downloadImage() {
     if (!resultUrl) return;
-    const a = document.createElement("a");
-    a.href = resultUrl;
-    a.download = `provador-${product.name.toLowerCase().replace(/[^a-z0-9]+/gi, "-")}.png`;
-    document.body.appendChild(a);
-    a.click();
-    document.body.removeChild(a);
+    fetch(resultUrl)
+      .then((res) => res.blob())
+      .then((blob) => {
+        const url = URL.createObjectURL(blob);
+        const a = document.createElement("a");
+        a.href = url;
+        a.download = `provador-${product.name.toLowerCase().replace(/[^a-z0-9]+/gi, "-")}.png`;
+        document.body.appendChild(a);
+        a.click();
+        document.body.removeChild(a);
+        URL.revokeObjectURL(url);
+      })
+      .catch(() => openImage());
   }
 
   // Bloqueia scroll do body
