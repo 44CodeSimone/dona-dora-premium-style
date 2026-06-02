@@ -1,26 +1,24 @@
 import { createFileRoute, useNavigate, Link } from "@tanstack/react-router";
 import { useState, type FormEvent } from "react";
-import { useServerFn } from "@tanstack/react-start";
 import { supabase } from "@/integrations/supabase/client";
-import { checkIsAdmin } from "@/lib/admin.functions";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 
-export const Route = createFileRoute("/login")({
+export const Route = createFileRoute("/cadastro")({
   head: () => ({
     meta: [
-      { title: "Entrar · Dona Dora" },
+      { title: "Criar conta · Dona Dora" },
       { name: "robots", content: "noindex" },
     ],
   }),
-  component: LoginPage,
+  component: CadastroPage,
 });
 
-function LoginPage() {
+function CadastroPage() {
   const navigate = useNavigate();
-  const checkAdmin = useServerFn(checkIsAdmin);
 
+  const [fullName, setFullName] = useState("");
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
 
@@ -33,30 +31,24 @@ function LoginPage() {
     setLoading(true);
     setErr(null);
 
-    const { error } = await supabase.auth.signInWithPassword({
+    const { error } = await supabase.auth.signUp({
       email,
       password,
+      options: {
+        data: {
+          full_name: fullName,
+        },
+      },
     });
 
+    setLoading(false);
+
     if (error) {
-      setLoading(false);
-      setErr("Credenciais inválidas. Verifique e tente novamente.");
+      setErr(error.message);
       return;
     }
 
-    try {
-      const result = await checkAdmin();
-
-      if (result.isAdmin) {
-        navigate({ to: "/admin" });
-      } else {
-        navigate({ to: "/minha-conta" });
-      }
-    } catch {
-      navigate({ to: "/minha-conta" });
-    } finally {
-      setLoading(false);
-    }
+    navigate({ to: "/minha-conta" });
   }
 
   return (
@@ -72,13 +64,27 @@ function LoginPage() {
         </Link>
 
         <div className="bg-background text-foreground p-8 rounded-sm shadow-luxe">
-          <h1 className="font-display text-3xl mb-1">Entrar</h1>
+          <h1 className="font-display text-3xl mb-1">
+            Criar conta
+          </h1>
 
           <p className="text-sm text-muted-foreground mb-6">
-            Acesse sua conta para acompanhar pedidos, favoritos e dados da loja.
+            Crie sua conta para acompanhar pedidos, favoritos e novidades.
           </p>
 
           <form onSubmit={onSubmit} className="space-y-4">
+            <div>
+              <Label htmlFor="name">Nome completo</Label>
+
+              <Input
+                id="name"
+                value={fullName}
+                onChange={(e) => setFullName(e.target.value)}
+                required
+                autoComplete="name"
+              />
+            </div>
+
             <div>
               <Label htmlFor="email">E-mail</Label>
 
@@ -101,29 +107,31 @@ function LoginPage() {
                 value={password}
                 onChange={(e) => setPassword(e.target.value)}
                 required
-                autoComplete="current-password"
+                autoComplete="new-password"
               />
             </div>
 
-            {err && <p className="text-sm text-destructive">{err}</p>}
+            {err && (
+              <p className="text-sm text-destructive">
+                {err}
+              </p>
+            )}
 
-            <Button type="submit" className="w-full" disabled={loading}>
-              {loading ? "Entrando..." : "Entrar"}
+            <Button
+              type="submit"
+              className="w-full"
+              disabled={loading}
+            >
+              {loading ? "Criando conta..." : "Criar conta"}
             </Button>
 
-            <div className="flex items-center justify-between gap-4 pt-2 text-xs text-muted-foreground">
+            <div className="text-center text-sm text-muted-foreground">
+              Já possui conta?{" "}
               <Link
-                to="/reset-password"
-                className="hover:text-foreground underline-offset-4 hover:underline"
+                to="/login"
+                className="underline underline-offset-4 hover:text-foreground"
               >
-                Esqueci minha senha
-              </Link>
-
-              <Link
-                to="/cadastro"
-                className="hover:text-foreground underline-offset-4 hover:underline"
-              >
-                Criar conta
+                Entrar
               </Link>
             </div>
           </form>
