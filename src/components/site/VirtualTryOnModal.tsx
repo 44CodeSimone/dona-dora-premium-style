@@ -1,4 +1,5 @@
 import { useEffect, useRef, useState } from "react";
+import { createPortal } from "react-dom";
 import { useServerFn } from "@tanstack/react-start";
 import { useNavigate } from "@tanstack/react-router";
 import { Sparkles, Upload, X, Loader2, CheckCircle2, AlertCircle, ExternalLink, Download } from "lucide-react";
@@ -39,6 +40,7 @@ export function VirtualTryOnModal({ product, onClose }: { product: Product; onCl
   const [resultUrl, setResultUrl] = useState<string | null>(null);
   const [errorMsg, setErrorMsg] = useState<string | null>(null);
   const [zoomOpen, setZoomOpen] = useState(false);
+  const [mounted, setMounted] = useState(false);
   const inputRef = useRef<HTMLInputElement>(null);
 
   useEffect(() => {
@@ -173,6 +175,7 @@ export function VirtualTryOnModal({ product, onClose }: { product: Product; onCl
 
   // Bloqueia scroll do body
   useEffect(() => {
+    setMounted(true);
     const prev = document.body.style.overflow;
     document.body.style.overflow = "hidden";
     return () => {
@@ -180,10 +183,32 @@ export function VirtualTryOnModal({ product, onClose }: { product: Product; onCl
     };
   }, []);
 
-  return (
-    <div className="fixed inset-0 z-[100] bg-foreground/60 backdrop-blur-sm">
-      <div className="flex min-h-dvh items-center justify-center p-3 md:p-6">
-      <div className="relative flex w-full max-w-4xl max-h-[92vh] flex-col overflow-hidden bg-background border border-foreground/10 shadow-2xl">
+  useEffect(() => {
+    const onKeyDown = (event: KeyboardEvent) => {
+      if (event.key === "Escape") {
+        if (zoomOpen) {
+          setZoomOpen(false);
+          return;
+        }
+
+        onClose();
+      }
+    };
+
+    window.addEventListener("keydown", onKeyDown);
+    return () => window.removeEventListener("keydown", onKeyDown);
+  }, [onClose, zoomOpen]);
+
+  if (!mounted) return null;
+
+  return createPortal(
+    <div className="fixed inset-0 z-[2147483000] bg-foreground/65 backdrop-blur-sm" onClick={onClose}>
+      <div
+        role="dialog"
+        aria-modal="true"
+        className="fixed left-1/2 top-1/2 z-[2147483001] flex w-[calc(100vw-24px)] max-w-4xl -translate-x-1/2 -translate-y-1/2 flex-col overflow-hidden rounded-lg border border-foreground/10 bg-background shadow-2xl max-h-[calc(100vh-24px)] md:w-full md:max-h-[90vh]"
+        onClick={(event) => event.stopPropagation()}
+      >
         <button
           onClick={onClose}
           className="absolute top-3 right-3 z-10 p-2 bg-background/90 text-muted-foreground hover:text-foreground"
@@ -380,10 +405,9 @@ export function VirtualTryOnModal({ product, onClose }: { product: Product; onCl
           </div>
         </div>
       </div>
-      </div>
 
       {zoomOpen && resultUrl ? (
-        <div className="fixed inset-0 z-[110] bg-foreground/85 p-3 md:p-6" onClick={() => setZoomOpen(false)}>
+        <div className="fixed inset-0 z-[2147483002] bg-foreground/85 p-3 md:p-6" onClick={() => setZoomOpen(false)}>
           <button
             onClick={() => setZoomOpen(false)}
             className="absolute top-3 right-3 z-10 p-2 bg-background/90 text-foreground"
@@ -400,6 +424,7 @@ export function VirtualTryOnModal({ product, onClose }: { product: Product; onCl
           </div>
         </div>
       ) : null}
-    </div>
+    </div>,
+    document.body,
   );
 }
