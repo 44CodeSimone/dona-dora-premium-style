@@ -3,7 +3,8 @@ import { z } from "zod";
 import { requireSupabaseAuth } from "@/integrations/supabase/auth-middleware";
 import { supabaseAdmin } from "@/integrations/supabase/client.server";
 
-const PROVIDER_URL = "https://fal.run/fal-ai/fashn/tryon/v1.6";
+const PROVIDER_URL = "https://api.openai.com/v1/images/edits";
+const PROVIDER_MODEL = "gpt-image-1";
 
 const TECHNICAL_INTENT = {
   base_image_role: "customer_photo",
@@ -26,36 +27,60 @@ const TECHNICAL_INTENT = {
   ],
 } as const;
 
+function buildPrompt(category: string): string {
+  return [
+    "Photorealistic virtual try-on.",
+    "The FIRST image is the real customer (model). The SECOND image is a garment from the store.",
+    "Generate a single photo of the SAME customer from the first image wearing the garment shown in the second image.",
+    "Strictly preserve the customer's face, hair, skin tone, expression, identity, body proportions, pose and background lighting from the first image.",
+    "Do NOT use the person from the second image. Do NOT alter, beautify or reshape the customer.",
+    "Replace only the relevant clothing area with the garment, preserving its colors, print, fabric and silhouette.",
+    `Garment category: ${category}.`,
+    "Output: a single full-body, natural and realistic photo.",
+  ].join(" ");
+}
+
+async function fetchAsFile(url: string, filename: string): Promise<File> {
+  const r = await fetch(url);
+  if (!r.ok) throw new Error(`Falha ao baixar imagem (${r.status})`);
+  const ct = r.headers.get("content-type") || "image/png";
+  const buf = await r.arrayBuffer();
+  return new File([buf], filename, { type: ct });
+}
+
 async function callProvider(args: {
   customer_image_url: string;
   store_garment_image_url: string;
   category: "tops" | "bottoms" | "one-pieces" | "auto";
-}): Promise<{ image_url: string } | { error: string }> {
-  const key = process.env.VIRTUAL_TRY_ON_API_KEY;
-  if (!key) return { error: "VIRTUAL_TRY_ON_API_KEY ausente no servidor." };
+}): Promise<{ b64: string; mime: string } | { error: string }> {
+  const key = process.env.OPENAI_API_KEY;
+  if (!key) return { error: "OPENAI_API_KEY ausente no servidor." };
   try {
+    const [customerFile, garmentFile] = await Promise.all([
+      fetchAsFile(args.customer_image_url, "customer.png"),
+      fetchAsFile(args.store_garment_image_url, "garment.png"),
+    ]);
+
+    const form = new FormData();
+    form.append("model", PROVIDER_MODEL);
+    form.append("prompt", buildPrompt(args.category));
+    form.append("n", "1");
+    form.append("size", "1024x1024");
+    form.append("quality", "high");
+    form.append("input_fidelity", "high");
+    // Multi-image edit: customer first (base), garment second (reference)
+    form.append("image[]", customerFile, "customer.png");
+    form.append("image[]", garmentFile, "garment.png");
+
     const res = await fetch(PROVIDER_URL, {
       method: "POST",
-      headers: {
-        "Content-Type": "application/json",
-        Authorization: `Key ${key}`,
-      },
-      body: JSON.stringify({
-        model_image: args.customer_image_url,
-        garment_image: args.store_garment_image_url,
-        category: args.category,
-        mode: "balanced",
-        garment_photo_type: "auto",
-        moderation_level: "permissive",
-        num_samples: 1,
-        segmentation_free: true,
-        output_format: "png",
-      }),
+      headers: { Authorization: `Bearer ${key}` },
+      body: form,
     });
     const text = await res.text();
     if (!res.ok) {
-      console.error("[tryon] provider error", res.status, text.slice(0, 500));
-      return { error: `Provider ${res.status}: ${text.slice(0, 180)}` };
+      console.error("[tryon] openai error", res.status, text.slice(0, 500));
+      return { error: `Provider ${res.status}: ${text.slice(0, 200)}` };
     }
     let json: any;
     try {
@@ -63,18 +88,12 @@ async function callProvider(args: {
     } catch {
       return { error: "Resposta inválida do provedor" };
     }
-    // fal.ai shapes commonly return { images: [{ url }] } or { image: { url } }
-    const url =
-      json?.images?.[0]?.url ??
-      json?.image?.url ??
-      json?.output?.[0] ??
-      json?.url ??
-      null;
-    if (!url || typeof url !== "string") {
-      console.error("[tryon] no image in provider response", JSON.stringify(json).slice(0, 500));
+    const b64: string | undefined = json?.data?.[0]?.b64_json;
+    if (!b64) {
+      console.error("[tryon] no b64 in response", JSON.stringify(json).slice(0, 500));
       return { error: "Sem imagem na resposta" };
     }
-    return { image_url: url };
+    return { b64, mime: "image/png" };
   } catch (e: any) {
     console.error("[tryon] provider exception", e?.message);
     return { error: e?.message ?? "Falha de rede com o provedor" };
@@ -186,26 +205,23 @@ export const submitTryOn = createServerFn({ method: "POST" })
       return { id: session.id, status: "failed" as const, error: result.error };
     }
 
-    providerPreviewUrl = result.image_url;
-
-    // Baixa imagem gerada e guarda no bucket privado
+    // Decodifica base64 e guarda no bucket privado
     let storedPath: string | null = null;
     try {
-      const dl = await fetch(result.image_url);
-      if (dl.ok) {
-        const buf = new Uint8Array(await dl.arrayBuffer());
-        const ext = (dl.headers.get("content-type")?.includes("png") ? "png" : "jpg");
-        const path = `${userId}/${session.id}-result.${ext}`;
-        const { error: upErr } = await supabaseAdmin.storage
-          .from("virtual-tryon")
-          .upload(path, buf, {
-            contentType: dl.headers.get("content-type") ?? "image/jpeg",
-            upsert: true,
-          });
-        if (!upErr) storedPath = path;
-      }
+      const binary = atob(result.b64);
+      const buf = new Uint8Array(binary.length);
+      for (let i = 0; i < binary.length; i++) buf[i] = binary.charCodeAt(i);
+      const path = `${userId}/${session.id}-result.png`;
+      const { error: upErr } = await supabaseAdmin.storage
+        .from("virtual-tryon")
+        .upload(path, buf, {
+          contentType: result.mime,
+          upsert: true,
+        });
+      if (!upErr) storedPath = path;
+      else console.error("[tryon] upload result failed", upErr);
     } catch (e) {
-      console.error("[tryon] download/upload result failed", e);
+      console.error("[tryon] decode/upload result failed", e);
     }
 
     await supabaseAdmin
@@ -216,7 +232,7 @@ export const submitTryOn = createServerFn({ method: "POST" })
       })
       .eq("id", session.id);
 
-    return { id: session.id, status: "completed" as const, preview_url: storedPath ? null : providerPreviewUrl };
+    return { id: session.id, status: "completed" as const, preview_url: null };
   });
 
 export const getMyTryOnSession = createServerFn({ method: "POST" })
