@@ -102,11 +102,8 @@ export function VirtualTryOnModal({ product, onClose }: { product: Product; onCl
         return;
       }
 
-      if ("preview_url" in res && res.preview_url) {
-        setResultUrl(res.preview_url);
-        setStatus("completed");
-        return;
-      }
+
+
 
       const sess = await getFn({ data: { id: res.id } });
       if (sess.signed_url) {
