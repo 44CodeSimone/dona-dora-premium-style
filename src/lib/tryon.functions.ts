@@ -205,26 +205,23 @@ export const submitTryOn = createServerFn({ method: "POST" })
       return { id: session.id, status: "failed" as const, error: result.error };
     }
 
-    providerPreviewUrl = result.image_url;
-
-    // Baixa imagem gerada e guarda no bucket privado
+    // Decodifica base64 e guarda no bucket privado
     let storedPath: string | null = null;
     try {
-      const dl = await fetch(result.image_url);
-      if (dl.ok) {
-        const buf = new Uint8Array(await dl.arrayBuffer());
-        const ext = (dl.headers.get("content-type")?.includes("png") ? "png" : "jpg");
-        const path = `${userId}/${session.id}-result.${ext}`;
-        const { error: upErr } = await supabaseAdmin.storage
-          .from("virtual-tryon")
-          .upload(path, buf, {
-            contentType: dl.headers.get("content-type") ?? "image/jpeg",
-            upsert: true,
-          });
-        if (!upErr) storedPath = path;
-      }
+      const binary = atob(result.b64);
+      const buf = new Uint8Array(binary.length);
+      for (let i = 0; i < binary.length; i++) buf[i] = binary.charCodeAt(i);
+      const path = `${userId}/${session.id}-result.png`;
+      const { error: upErr } = await supabaseAdmin.storage
+        .from("virtual-tryon")
+        .upload(path, buf, {
+          contentType: result.mime,
+          upsert: true,
+        });
+      if (!upErr) storedPath = path;
+      else console.error("[tryon] upload result failed", upErr);
     } catch (e) {
-      console.error("[tryon] download/upload result failed", e);
+      console.error("[tryon] decode/upload result failed", e);
     }
 
     await supabaseAdmin
@@ -235,7 +232,7 @@ export const submitTryOn = createServerFn({ method: "POST" })
       })
       .eq("id", session.id);
 
-    return { id: session.id, status: "completed" as const, preview_url: storedPath ? null : providerPreviewUrl };
+    return { id: session.id, status: "completed" as const, preview_url: null };
   });
 
 export const getMyTryOnSession = createServerFn({ method: "POST" })
