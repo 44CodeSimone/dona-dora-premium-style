@@ -138,7 +138,7 @@ function CadastroPage() {
 
     if (!data.session) {
       setSuccess(
-        "Conta criada. Verifique seu e-mail para confirmar o cadastro antes de entrar.",
+        "Conta criada com sucesso. Caso a confirmação por e-mail esteja habilitada, verifique sua caixa de entrada antes de acessar sua conta.",
       );
       return;
     }
@@ -233,9 +233,7 @@ function CadastroPage() {
                 id="confirmPassword"
                 type="password"
                 value={confirmPassword}
-                onChange={(e) =>
-                  setConfirmPassword(e.target.value)
-                }
+                onChange={(e) => setConfirmPassword(e.target.value)}
                 required
                 autoComplete="new-password"
               />
