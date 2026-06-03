@@ -1,4 +1,4 @@
-import { createFileRoute, useNavigate, Link } from "@tanstack/react-router";
+﻿import { createFileRoute, useNavigate, Link } from "@tanstack/react-router";
 import { useEffect, useState } from "react";
 import { useServerFn } from "@tanstack/react-start";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
@@ -9,7 +9,14 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Tabs, TabsList, TabsTrigger, TabsContent } from "@/components/ui/tabs";
 import { Badge } from "@/components/ui/badge";
-import { LogOut, Trash2, Heart, Package, User as UserIcon } from "lucide-react";
+import {
+  LogOut,
+  Trash2,
+  Heart,
+  Package,
+  User as UserIcon,
+  ShieldCheck,
+} from "lucide-react";
 import { checkIsAdmin } from "@/lib/admin.functions";
 import {
   getMyOrders,
@@ -50,6 +57,7 @@ function AccountPage() {
   const navigate = useNavigate();
   const checkAdmin = useServerFn(checkIsAdmin);
   const [ready, setReady] = useState(false);
+  const [isAdmin, setIsAdmin] = useState(false);
 
   useEffect(() => {
     if (loading) return;
@@ -59,13 +67,16 @@ function AccountPage() {
       return;
     }
 
-    checkAdmin().then((r) => {
-      if (r.isAdmin) {
-        navigate({ to: "/admin" });
-      } else {
+    checkAdmin()
+      .then((r) => {
+        setIsAdmin(Boolean(r.isAdmin));
+      })
+      .catch(() => {
+        setIsAdmin(false);
+      })
+      .finally(() => {
         setReady(true);
-      }
-    });
+      });
   }, [user, loading, navigate, checkAdmin]);
 
   if (loading || !ready) {
@@ -79,7 +90,7 @@ function AccountPage() {
   return (
     <div className="min-h-screen bg-muted/30">
       <header className="bg-foreground text-background border-b border-background/10">
-        <div className="max-w-5xl mx-auto px-6 py-4 flex items-center justify-between">
+        <div className="max-w-5xl mx-auto px-6 py-4 flex items-center justify-between gap-3">
           <Link to="/" className="font-display text-2xl">
             Dona <span className="italic text-[color:var(--gold-soft)]">Dora</span>
             <span className="text-[10px] tracking-luxe uppercase text-background/60 ml-2">
@@ -87,17 +98,33 @@ function AccountPage() {
             </span>
           </Link>
 
-          <Button
-            variant="outline"
-            size="sm"
-            onClick={async () => {
-              await supabase.auth.signOut();
-              navigate({ to: "/" });
-            }}
-            className="bg-transparent border-background/30 text-background hover:bg-background hover:text-foreground"
-          >
-            <LogOut className="size-4 mr-2" /> Sair
-          </Button>
+          <div className="flex items-center gap-2">
+            {isAdmin && (
+              <Button
+                asChild
+                variant="outline"
+                size="sm"
+                className="bg-transparent border-background/30 text-background hover:bg-background hover:text-foreground"
+              >
+                <Link to="/admin">
+                  <ShieldCheck className="size-4 mr-2" />
+                  Painel admin
+                </Link>
+              </Button>
+            )}
+
+            <Button
+              variant="outline"
+              size="sm"
+              onClick={async () => {
+                await supabase.auth.signOut();
+                navigate({ to: "/" });
+              }}
+              className="bg-transparent border-background/30 text-background hover:bg-background hover:text-foreground"
+            >
+              <LogOut className="size-4 mr-2" /> Sair
+            </Button>
+          </div>
         </div>
       </header>
 
