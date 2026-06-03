@@ -114,7 +114,7 @@ function CartBody({ onClose }: { onClose: () => void }) {
       onClose();
 
       navigate({
-        to: "/minha-conta",
+        to: "/pedido-confirmado",
       });
     } catch (e: any) {
       toast.error(e?.message ?? "Não foi possível confirmar o pedido.");
