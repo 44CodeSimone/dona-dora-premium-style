@@ -5,9 +5,8 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
 import { Label } from "@/components/ui/label";
-import { ShoppingBag, Minus, Plus, Trash2, MessageCircle } from "lucide-react";
+import { ShoppingBag, Minus, Plus, Trash2, CheckCircle } from "lucide-react";
 import { useCart, cart } from "@/hooks/use-cart";
-import { useSiteSettings } from "@/hooks/use-site-settings";
 import { useAuth } from "@/hooks/use-auth";
 import { createOrder } from "@/lib/site.functions";
 import { useServerFn } from "@tanstack/react-start";
@@ -56,19 +55,11 @@ export function CartButton() {
 
 function CartBody({ onClose }: { onClose: () => void }) {
   const navigate = useNavigate();
-
   const { user } = useAuth();
-
   const { items, subtotal } = useCart();
-
-  const { data: settings } = useSiteSettings();
-
-  const whatsapp = settings?.whatsapp ?? "5549991210083";
-
   const orderFn = useServerFn(createOrder);
 
   const [checkout, setCheckout] = useState(false);
-
   const [form, setForm] = useState({
     name: "",
     whatsapp: "",
@@ -93,10 +84,9 @@ function CartBody({ onClose }: { onClose: () => void }) {
         data: {
           customer_name: form.name.trim(),
           customer_whatsapp: form.whatsapp.trim(),
-          customer_email: form.email.trim() || null,
+          customer_email: form.email.trim() || user?.email || null,
           notes: form.notes.trim() || null,
           subtotal,
-
           items: items.map((i) => ({
             product_id: i.product_id,
             name: i.name,
@@ -108,44 +98,26 @@ function CartBody({ onClose }: { onClose: () => void }) {
         },
       });
 
-      const msg = [
-        `Olá! Quero finalizar este pedido na Dona Dora:`,
-        ``,
-        `*Nome:* ${form.name}`,
-        `*WhatsApp:* ${form.whatsapp}`,
-        form.email ? `*E-mail:* ${form.email}` : "",
-        ``,
-        `*Pedido:*`,
-
-        ...items.map(
-          (i) =>
-            `• ${i.qty}x ${i.name}${
-              i.size ? ` · Tam ${i.size}` : ""
-            }${i.color ? ` · ${i.color}` : ""} — ${brl(
-              i.price * i.qty,
-            )}`,
-        ),
-
-        ``,
-
-        `*Subtotal:* ${brl(subtotal)}`,
-
-        form.notes ? `\n*Observações:* ${form.notes}` : "",
-      ]
-        .filter(Boolean)
-        .join("\n");
-
-      const url = `https://wa.me/${whatsapp}?text=${encodeURIComponent(msg)}`;
-
-      window.open(url, "_blank");
-
       cart.clear();
 
-      toast.success("Pedido enviado! Continuamos no WhatsApp.");
+      toast.success("Pedido confirmado! A Dona Dora entrará em contato para combinar pagamento e entrega.");
+
+      setCheckout(false);
+
+      setForm({
+        name: "",
+        whatsapp: "",
+        email: "",
+        notes: "",
+      });
 
       onClose();
+
+      navigate({
+        to: "/minha-conta",
+      });
     } catch (e: any) {
-      toast.error(e?.message ?? "Não foi possível enviar.");
+      toast.error(e?.message ?? "Não foi possível confirmar o pedido.");
     } finally {
       setBusy(false);
     }
@@ -161,6 +133,11 @@ function CartBody({ onClose }: { onClose: () => void }) {
 
       return;
     }
+
+    setForm((current) => ({
+      ...current,
+      email: current.email || user.email || "",
+    }));
 
     setCheckout(true);
   }
@@ -193,7 +170,7 @@ function CartBody({ onClose }: { onClose: () => void }) {
     return (
       <div className="flex-1 overflow-y-auto p-5 space-y-4 bg-muted/20">
         <p className="text-sm text-muted-foreground">
-          Para finalizar, deixe seus dados. Você será encaminhada ao WhatsApp com o resumo do pedido.
+          Confirme seus dados para registrar o pedido. A Dona Dora entrará em contato pelo WhatsApp para combinar pagamento e entrega.
         </p>
 
         <div className="space-y-3">
@@ -227,7 +204,7 @@ function CartBody({ onClose }: { onClose: () => void }) {
           </div>
 
           <div>
-            <Label>E-mail (opcional)</Label>
+            <Label>E-mail</Label>
 
             <Input
               value={form.email}
@@ -281,9 +258,9 @@ function CartBody({ onClose }: { onClose: () => void }) {
             disabled={busy}
             className="flex-1"
           >
-            <MessageCircle className="size-4 mr-2" />
+            <CheckCircle className="size-4 mr-2" />
 
-            {busy ? "Enviando..." : "Finalizar no WhatsApp"}
+            {busy ? "Confirmando..." : "Confirmar pedido"}
           </Button>
         </div>
       </div>
