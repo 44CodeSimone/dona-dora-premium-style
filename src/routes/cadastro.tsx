@@ -15,28 +15,116 @@ export const Route = createFileRoute("/cadastro")({
   component: CadastroPage,
 });
 
+function validatePassword(password: string) {
+  if (password.length < 8) {
+    return "A senha precisa ter pelo menos 8 caracteres.";
+  }
+
+  if (!/[A-Z]/.test(password)) {
+    return "A senha precisa ter pelo menos uma letra maiúscula.";
+  }
+
+  if (!/[a-z]/.test(password)) {
+    return "A senha precisa ter pelo menos uma letra minúscula.";
+  }
+
+  if (!/[0-9]/.test(password)) {
+    return "A senha precisa ter pelo menos um número.";
+  }
+
+  if (!/[^A-Za-z0-9]/.test(password)) {
+    return "A senha precisa ter pelo menos um símbolo, como @, ! ou #.";
+  }
+
+  return null;
+}
+
+function translateSignUpError(message: string) {
+  const normalized = message.toLowerCase();
+
+  if (
+    normalized.includes("weak") ||
+    normalized.includes("easy to guess")
+  ) {
+    return "Essa senha ainda é considerada fraca. Use uma senha mais longa, misturando letras, números e símbolos.";
+  }
+
+  if (
+    normalized.includes("already") ||
+    normalized.includes("registered") ||
+    normalized.includes("exists")
+  ) {
+    return "Esse e-mail já possui cadastro. Tente entrar na sua conta ou recuperar a senha.";
+  }
+
+  if (normalized.includes("invalid email")) {
+    return "Informe um e-mail válido.";
+  }
+
+  if (
+    normalized.includes("signup") &&
+    normalized.includes("disabled")
+  ) {
+    return "O cadastro de novos clientes está desativado no momento. Entre em contato com a loja.";
+  }
+
+  return "Não foi possível criar sua conta agora. Verifique os dados e tente novamente.";
+}
+
 function CadastroPage() {
   const navigate = useNavigate();
 
   const [fullName, setFullName] = useState("");
+  const [whatsapp, setWhatsapp] = useState("");
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
+  const [confirmPassword, setConfirmPassword] = useState("");
 
   const [loading, setLoading] = useState(false);
   const [err, setErr] = useState<string | null>(null);
+  const [success, setSuccess] = useState<string | null>(null);
 
   async function onSubmit(e: FormEvent) {
     e.preventDefault();
 
-    setLoading(true);
-    setErr(null);
+    const cleanName = fullName.trim();
+    const cleanWhatsapp = whatsapp.trim();
+    const cleanEmail = email.trim().toLowerCase();
 
-    const { error } = await supabase.auth.signUp({
-      email,
+    setErr(null);
+    setSuccess(null);
+
+    if (cleanName.length < 3) {
+      setErr("Informe seu nome completo.");
+      return;
+    }
+
+    if (cleanWhatsapp.length < 8) {
+      setErr("Informe um WhatsApp válido para contato sobre seus pedidos.");
+      return;
+    }
+
+    if (password !== confirmPassword) {
+      setErr("As senhas não conferem.");
+      return;
+    }
+
+    const passwordError = validatePassword(password);
+
+    if (passwordError) {
+      setErr(passwordError);
+      return;
+    }
+
+    setLoading(true);
+
+    const { data, error } = await supabase.auth.signUp({
+      email: cleanEmail,
       password,
       options: {
         data: {
-          full_name: fullName,
+          full_name: cleanName,
+          phone: cleanWhatsapp,
         },
       },
     });
@@ -44,7 +132,14 @@ function CadastroPage() {
     setLoading(false);
 
     if (error) {
-      setErr(error.message);
+      setErr(translateSignUpError(error.message));
+      return;
+    }
+
+    if (!data.session) {
+      setSuccess(
+        "Conta criada. Verifique seu e-mail para confirmar o cadastro antes de entrar.",
+      );
       return;
     }
 
@@ -52,7 +147,7 @@ function CadastroPage() {
   }
 
   return (
-    <div className="min-h-screen grid place-items-center bg-foreground text-background px-4">
+    <div className="min-h-screen grid place-items-center bg-foreground text-background px-4 py-10">
       <div className="w-full max-w-md">
         <Link to="/" className="block text-center mb-10">
           <span className="font-display text-4xl">
@@ -69,7 +164,7 @@ function CadastroPage() {
           </h1>
 
           <p className="text-sm text-muted-foreground mb-6">
-            Crie sua conta para acompanhar pedidos, favoritos e novidades.
+            Crie sua conta para acompanhar pedidos, favoritos e dados de compra.
           </p>
 
           <form onSubmit={onSubmit} className="space-y-4">
@@ -82,6 +177,19 @@ function CadastroPage() {
                 onChange={(e) => setFullName(e.target.value)}
                 required
                 autoComplete="name"
+              />
+            </div>
+
+            <div>
+              <Label htmlFor="whatsapp">WhatsApp</Label>
+
+              <Input
+                id="whatsapp"
+                value={whatsapp}
+                onChange={(e) => setWhatsapp(e.target.value)}
+                required
+                autoComplete="tel"
+                placeholder="(DDD) 9 9999-9999"
               />
             </div>
 
@@ -109,6 +217,28 @@ function CadastroPage() {
                 required
                 autoComplete="new-password"
               />
+
+              <p className="mt-1 text-xs text-muted-foreground">
+                Use pelo menos 8 caracteres com letras maiúsculas,
+                minúsculas, número e símbolo.
+              </p>
+            </div>
+
+            <div>
+              <Label htmlFor="confirmPassword">
+                Confirmar senha
+              </Label>
+
+              <Input
+                id="confirmPassword"
+                type="password"
+                value={confirmPassword}
+                onChange={(e) =>
+                  setConfirmPassword(e.target.value)
+                }
+                required
+                autoComplete="new-password"
+              />
             </div>
 
             {err && (
@@ -117,12 +247,22 @@ function CadastroPage() {
               </p>
             )}
 
+            {success && (
+              <p className="text-sm text-emerald-600">
+                {success}
+              </p>
+            )}
+
             <Button
               type="submit"
               className="w-full"
-              disabled={loading}
+              disabled={loading || Boolean(success)}
             >
-              {loading ? "Criando conta..." : "Criar conta"}
+              {loading
+                ? "Criando conta..."
+                : success
+                  ? "Conta criada"
+                  : "Criar conta"}
             </Button>
 
             <div className="text-center text-sm text-muted-foreground">
