@@ -1,11 +1,11 @@
-import { createFileRoute, Link } from "@tanstack/react-router";
+Ôªøimport { createFileRoute, Link } from "@tanstack/react-router";
 import { CheckCircle, Package, ShoppingBag, Sparkles } from "lucide-react";
 import { Button } from "@/components/ui/button";
 
 export const Route = createFileRoute("/pedido-confirmado")({
   head: () => ({
     meta: [
-      { title: "Pedido confirmado ∑ Dona Dora" },
+      { title: "Pedido confirmado ¬∑ Dona Dora" },
       { name: "robots", content: "noindex" },
     ],
   }),
@@ -43,9 +43,9 @@ function PedidoConfirmadoPage() {
             </h1>
 
             <p className="text-muted-foreground max-w-xl mx-auto">
-              Seu pedido foi registrado no sistema da Dona Dora. Nossa equipe ir·
-              conferir os itens e entrar em contato para combinar pagamento,
-              entrega ou retirada.
+              Seu pedido foi recebido pela Dona Dora. Nossa equipe ir√° conferir
+              os itens, validar a disponibilidade e dar continuidade ao atendimento
+              com cuidado e aten√ß√£o.
             </p>
           </div>
 
@@ -58,7 +58,7 @@ function PedidoConfirmadoPage() {
               </h2>
 
               <p className="text-sm text-muted-foreground mt-1">
-                Seus produtos foram enviados para an·lise da loja.
+                Sua solicita√ß√£o foi registrada no sistema da loja.
               </p>
             </div>
 
@@ -66,11 +66,11 @@ function PedidoConfirmadoPage() {
               <Sparkles className="size-5 mb-3 text-[color:var(--gold)]" />
 
               <h2 className="font-medium">
-                Atendimento personalizado
+                An√°lise da loja
               </h2>
 
               <p className="text-sm text-muted-foreground mt-1">
-                A equipe confirma disponibilidade, tamanhos e condiÁıes.
+                A equipe ir√° confirmar produtos, tamanhos e disponibilidade.
               </p>
             </div>
 
@@ -78,11 +78,11 @@ function PedidoConfirmadoPage() {
               <ShoppingBag className="size-5 mb-3 text-[color:var(--gold)]" />
 
               <h2 className="font-medium">
-                PrÛximos passos
+                Pr√≥ximos passos
               </h2>
 
               <p className="text-sm text-muted-foreground mt-1">
-                Pagamento e entrega ser„o combinados diretamente com a loja.
+                O pedido seguir√° para atendimento, pagamento e entrega.
               </p>
             </div>
           </div>
