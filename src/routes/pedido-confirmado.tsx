@@ -95,9 +95,9 @@ function PedidoConfirmadoPage() {
             </Button>
 
             <Button asChild variant="outline">
-              <Link to="/">
+              <a href="/#colecao">
                 Continuar comprando
-              </Link>
+              </a>
             </Button>
           </div>
         </section>
