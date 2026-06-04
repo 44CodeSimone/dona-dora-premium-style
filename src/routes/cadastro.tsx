@@ -122,6 +122,7 @@ function CadastroPage() {
       email: cleanEmail,
       password,
       options: {
+        emailRedirectTo: `${window.location.origin}/`,
         data: {
           full_name: cleanName,
           phone: cleanWhatsapp,
