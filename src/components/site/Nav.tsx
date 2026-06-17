@@ -1,6 +1,8 @@
 import { useEffect, useState } from "react";
-import { Menu, X } from "lucide-react";
+import { Link } from "@tanstack/react-router";
+import { Menu, X, User } from "lucide-react";
 import { CartButton } from "./Cart";
+import { useAuth } from "@/hooks/use-auth";
 
 const links = [
   { href: "#colecao", label: "Loja" },
@@ -11,6 +13,7 @@ const links = [
 ];
 
 export function Nav() {
+  const { user, loading } = useAuth();
   const [scrolled, setScrolled] = useState(false);
   const [open, setOpen] = useState(false);
 
@@ -20,6 +23,9 @@ export function Nav() {
     window.addEventListener("scroll", onScroll, { passive: true });
     return () => window.removeEventListener("scroll", onScroll);
   }, []);
+
+  const accountLabel = user ? "Minha Conta" : "Entrar";
+  const accountTo = user ? "/minha-conta" : "/login";
 
   return (
     <header
@@ -52,6 +58,16 @@ export function Nav() {
         </nav>
 
         <div className="flex items-center gap-1">
+          {!loading && (
+            <Link
+              to={accountTo}
+              className="hidden md:inline-flex items-center gap-2 text-xs tracking-[0.2em] uppercase px-4 py-2.5 border border-foreground/20 text-foreground hover:bg-foreground hover:text-background transition-all duration-500 ease-luxe"
+            >
+              <User className="size-3.5" />
+              {accountLabel}
+            </Link>
+          )}
+
           <a
             href="https://wa.me/5549991210083"
             target="_blank"
@@ -60,7 +76,9 @@ export function Nav() {
           >
             Atendimento
           </a>
+
           <CartButton />
+
           <button
             onClick={() => setOpen((s) => !s)}
             className="md:hidden p-2 -mr-2 text-foreground"
@@ -73,7 +91,7 @@ export function Nav() {
 
       <div
         className={`md:hidden overflow-hidden transition-all duration-500 ease-luxe bg-background/95 backdrop-blur-xl ${
-          open ? "max-h-[420px] border-b border-border" : "max-h-0"
+          open ? "max-h-[520px] border-b border-border" : "max-h-0"
         }`}
       >
         <nav className="px-6 py-6 flex flex-col gap-1">
@@ -87,6 +105,17 @@ export function Nav() {
               {l.label}
             </a>
           ))}
+
+          {!loading && (
+            <Link
+              to={accountTo}
+              onClick={() => setOpen(false)}
+              className="py-3 text-base text-foreground/90 border-b border-border/60"
+            >
+              {accountLabel}
+            </Link>
+          )}
+
           <a
             href="https://wa.me/5549991210083"
             target="_blank"
