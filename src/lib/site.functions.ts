@@ -1,5 +1,6 @@
 import { createServerFn } from "@tanstack/react-start";
 import { supabaseAdmin } from "@/integrations/supabase/client.server";
+import { requireSupabaseAuth } from "@/integrations/supabase/auth-middleware";
 import { z } from "zod";
 
 // Public-safe projection: excludes dora_system_prompt and lead_email
@@ -108,14 +109,17 @@ const orderSchema = z.object({
 });
 
 export const createOrder = createServerFn({ method: "POST" })
+  .middleware([requireSupabaseAuth])
   .inputValidator((input) => orderSchema.parse(input))
-  .handler(async ({ data }) => {
+  .handler(async ({ data, context }) => {
     const { data: row, error } = await supabaseAdmin
       .from("orders")
       .insert({
         customer_name: data.customer_name,
         customer_whatsapp: data.customer_whatsapp,
-        customer_email: data.customer_email ?? null,
+        // Prefer the authenticated user's email over the submitted value
+        // to prevent impersonation via the customer_email field.
+        customer_email: context.claims?.email ?? data.customer_email ?? null,
         notes: data.notes ?? null,
         items: data.items,
         subtotal: data.subtotal,

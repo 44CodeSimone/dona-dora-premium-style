@@ -1,6 +1,6 @@
-import { useEffect, useMemo, useState } from "react";
+﻿import { useEffect, useMemo, useState } from "react";
 import { useQuery } from "@tanstack/react-query";
-import { MessageCircle, Search, ShoppingBag, Sparkles } from "lucide-react";
+import { MessageCircle, Search, ShoppingBag, Sparkles, X } from "lucide-react";
 import { getPublicProducts } from "@/lib/site.functions";
 import { useSiteSettings } from "@/hooks/use-site-settings";
 import { useCart } from "@/hooks/use-cart";
@@ -42,13 +42,148 @@ function brl(v: number | null | undefined) {
   return new Intl.NumberFormat("pt-BR", { style: "currency", currency: "BRL" }).format(Number(v));
 }
 
+// ─── Add-to-cart picker ────────────────────────────────────────────────────────
+
+type Product = {
+  id: string;
+  name: string;
+  price: number | null;
+  promo: boolean;
+  promo_price: number | null;
+  image_url: string | null;
+  images: string[];
+  sizes: string[];
+  colors: string[];
+  category: string;
+  [key: string]: unknown;
+};
+
+type PickerProps = {
+  product: Product;
+  img: string;
+  finalPrice: number | null;
+  onClose: () => void;
+};
+
+function AddToCartPicker({ product, img, finalPrice, onClose }: PickerProps) {
+  const cart = useCart();
+  const hasSizes = product.sizes.length > 0;
+  const hasColors = product.colors.length > 0;
+
+  const [size, setSize] = useState<string>(hasSizes ? "" : "__none__");
+  const [color, setColor] = useState<string>(hasColors ? "" : "__none__");
+
+  function handleAdd() {
+    if (hasSizes && !size) {
+      toast.error("Selecione um tamanho.");
+      return;
+    }
+    if (hasColors && !color) {
+      toast.error("Selecione uma cor.");
+      return;
+    }
+    cart.add({
+      product_id: product.id,
+      name: product.name,
+      price: finalPrice ?? 0,
+      image: img,
+      size: size === "__none__" ? null : size,
+      color: color === "__none__" ? null : color,
+      qty: 1,
+    });
+    toast.success("Adicionado à sacola");
+    onClose();
+  }
+
+  return (
+    <div
+      className="absolute inset-0 bg-background/95 backdrop-blur-sm flex flex-col p-4 gap-3 z-10"
+      onClick={(e) => e.stopPropagation()}
+    >
+      <button
+        onClick={onClose}
+        className="absolute top-2 right-2 p-1 text-muted-foreground hover:text-foreground"
+        aria-label="Fechar"
+      >
+        <X className="size-4" />
+      </button>
+
+      <p className="text-[11px] tracking-luxe uppercase font-medium truncate pr-6">
+        {product.name}
+      </p>
+
+      {hasSizes && (
+        <div>
+          <p className="text-[10px] tracking-luxe uppercase text-muted-foreground mb-1.5">
+            Tamanho *
+          </p>
+          <div className="flex flex-wrap gap-1.5">
+            {product.sizes.map((s) => (
+              <button
+                key={s}
+                onClick={() => setSize(s)}
+                className={`px-2.5 py-1 text-[11px] border transition-colors ${
+                  size === s
+                    ? "bg-foreground text-background border-foreground"
+                    : "border-foreground/20 hover:border-foreground/50"
+                }`}
+              >
+                {s}
+              </button>
+            ))}
+          </div>
+        </div>
+      )}
+
+      {hasColors && (
+        <div>
+          <p className="text-[10px] tracking-luxe uppercase text-muted-foreground mb-1.5">
+            Cor *
+          </p>
+          <div className="flex flex-wrap gap-1.5">
+            {product.colors.map((c) => (
+              <button
+                key={c}
+                onClick={() => setColor(c)}
+                className={`px-2.5 py-1 text-[11px] border transition-colors ${
+                  color === c
+                    ? "bg-foreground text-background border-foreground"
+                    : "border-foreground/20 hover:border-foreground/50"
+                }`}
+              >
+                {c}
+              </button>
+            ))}
+          </div>
+        </div>
+      )}
+
+      <button
+        onClick={handleAdd}
+        className="mt-auto w-full inline-flex items-center justify-center gap-2 px-4 py-2.5 bg-foreground text-background text-[11px] tracking-luxe uppercase"
+      >
+        <ShoppingBag className="size-3.5" />
+        Adicionar à sacola
+      </button>
+    </div>
+  );
+}
+
+// ─── Main section ──────────────────────────────────────────────────────────────
+
 export function Produtos() {
   const [category, setCategory] = useState<CatId>("todos");
   const [onlyFeatured, setOnlyFeatured] = useState(false);
   const [search, setSearch] = useState("");
   const [debounced, setDebounced] = useState("");
   const [tryOnProduct, setTryOnProduct] = useState<any | null>(null);
-  const cart = useCart();
+  // ID of the product card currently showing the picker overlay
+  const [pickerProductId, setPickerProductId] = useState<string | null>(null);
+
+  const cartHook = useCart();
+  const { data: settings } = useSiteSettings();
+  const whatsapp = settings?.whatsapp ?? "5549991210083";
+  const waLink = `https://wa.me/${whatsapp}`;
 
   useEffect(() => {
     const t = setTimeout(() => setDebounced(search.trim()), 300);
@@ -67,11 +202,6 @@ export function Produtos() {
     window.addEventListener("dd:set-category", handler);
     return () => window.removeEventListener("dd:set-category", handler);
   }, []);
-
-
-  const { data: settings } = useSiteSettings();
-  const whatsapp = settings?.whatsapp ?? "5549991210083";
-  const waLink = `https://wa.me/${whatsapp}`;
 
   const queryArgs = useMemo(
     () => ({
@@ -161,7 +291,12 @@ export function Produtos() {
             <p className="text-sm text-muted-foreground">
               Nenhum produto encontrado.
             </p>
-            <a href={waLink} target="_blank" rel="noreferrer" className="inline-block mt-4 text-xs tracking-[0.22em] uppercase gold-underline">
+            <a
+              href={waLink}
+              target="_blank"
+              rel="noreferrer"
+              className="inline-block mt-4 text-xs tracking-[0.22em] uppercase gold-underline"
+            >
               Falar no WhatsApp
             </a>
           </div>
@@ -170,9 +305,16 @@ export function Produtos() {
             {products.map((p: any) => {
               const img = p.image_url || p.images?.[0] || FALLBACK_IMG[p.category] || fem;
               const tag = p.promo ? "Promo" : p.featured ? "Destaque" : p.category;
-              const finalPrice = p.promo && p.promo_price != null ? Number(p.promo_price) : p.price != null ? Number(p.price) : null;
+              const finalPrice =
+                p.promo && p.promo_price != null
+                  ? Number(p.promo_price)
+                  : p.price != null
+                    ? Number(p.price)
+                    : null;
               const outOfStock = p.stock != null && p.stock <= 0;
               const lowStock = !outOfStock && p.stock != null && p.stock <= 3;
+              const showPicker = pickerProductId === p.id;
+
               return (
                 <div key={p.id} className="group flex flex-col">
                   <div className="img-zoom card-touch relative aspect-[3/4] bg-muted overflow-hidden">
@@ -185,24 +327,46 @@ export function Produtos() {
                     <div className="absolute top-3 left-3 px-2.5 py-1 bg-background/90 backdrop-blur text-[10px] tracking-luxe uppercase">
                       {tag}
                     </div>
+
                     {outOfStock && (
                       <div className="absolute inset-0 bg-background/70 grid place-items-center">
-                        <span className="text-xs tracking-luxe uppercase bg-foreground text-background px-3 py-1.5">Esgotado</span>
+                        <span className="text-xs tracking-luxe uppercase bg-foreground text-background px-3 py-1.5">
+                          Esgotado
+                        </span>
                       </div>
                     )}
-                    {!outOfStock && (
+
+                    {/* Size/color picker overlay */}
+                    {!outOfStock && showPicker && (
+                      <AddToCartPicker
+                        product={p as Product}
+                        img={img}
+                        finalPrice={finalPrice}
+                        onClose={() => setPickerProductId(null)}
+                      />
+                    )}
+
+                    {/* "Adicionar" button — shows picker if product has options, adds directly otherwise */}
+                    {!outOfStock && !showPicker && (
                       <button
                         onClick={() => {
-                          cart.add({
-                            product_id: p.id,
-                            name: p.name,
-                            price: finalPrice ?? 0,
-                            image: img,
-                            size: p.sizes?.[0] ?? null,
-                            color: p.colors?.[0] ?? null,
-                            qty: 1,
-                          });
-                          toast.success("Adicionado à sacola");
+                          const hasSizes = (p.sizes?.length ?? 0) > 0;
+                          const hasColors = (p.colors?.length ?? 0) > 0;
+                          if (hasSizes || hasColors) {
+                            setPickerProductId(p.id);
+                          } else {
+                            // No options — add directly
+                            cartHook.add({
+                              product_id: p.id,
+                              name: p.name,
+                              price: finalPrice ?? 0,
+                              image: img,
+                              size: null,
+                              color: null,
+                              qty: 1,
+                            });
+                            toast.success("Adicionado à sacola");
+                          }
                         }}
                         className="absolute inset-x-3 bottom-3 inline-flex items-center justify-center gap-2 px-4 py-3 bg-foreground text-background text-[11px] tracking-luxe uppercase opacity-0 translate-y-3 group-hover:opacity-100 group-hover:translate-y-0 transition-all duration-500 ease-luxe"
                       >
@@ -211,17 +375,26 @@ export function Produtos() {
                       </button>
                     )}
                   </div>
+
                   <div className="mt-4 flex items-start justify-between gap-3">
                     <div className="min-w-0">
                       <h3 className="font-display text-lg leading-tight truncate">{p.name}</h3>
-                      {p.brand && <p className="text-[10px] tracking-luxe uppercase text-muted-foreground mt-1">{p.brand}</p>}
+                      {p.brand && (
+                        <p className="text-[10px] tracking-luxe uppercase text-muted-foreground mt-1">
+                          {p.brand}
+                        </p>
+                      )}
                       <div className="mt-1.5 space-y-0.5">
                         {p.promo && p.promo_price != null && p.price ? (
-                          <p className="text-xs text-muted-foreground line-through">{brl(Number(p.price))}</p>
+                          <p className="text-xs text-muted-foreground line-through">
+                            {brl(Number(p.price))}
+                          </p>
                         ) : null}
                         <p className="text-sm font-medium">{brl(finalPrice)}</p>
                         {p.pix_price && (
-                          <p className="text-[11px] text-[color:var(--gold)]">{brl(Number(p.pix_price))} no Pix</p>
+                          <p className="text-[11px] text-[color:var(--gold)]">
+                            {brl(Number(p.pix_price))} no Pix
+                          </p>
                         )}
                         {p.installments && p.installments > 1 && finalPrice ? (
                           <p className="text-[11px] text-muted-foreground">
@@ -246,6 +419,7 @@ export function Produtos() {
                       <MessageCircle className="size-4" />
                     </a>
                   </div>
+
                   {settings?.virtual_tryon_enabled && p.allow_virtual_try_on && !outOfStock && (
                     <button
                       onClick={() => setTryOnProduct(p)}
@@ -261,6 +435,7 @@ export function Produtos() {
           </div>
         )}
       </div>
+
       {tryOnProduct && (
         <VirtualTryOnModal product={tryOnProduct} onClose={() => setTryOnProduct(null)} />
       )}

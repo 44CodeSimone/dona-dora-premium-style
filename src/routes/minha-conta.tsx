@@ -159,6 +159,16 @@ function AccountPage() {
   );
 }
 
+function getOrderStep(status: string) {
+  const steps = ["novo", "aguardando_pagamento", "pago", "separando", "enviado", "entregue"];
+
+  if (status === "concluido") return steps.length - 1;
+  if (status === "cancelado") return -1;
+
+  const index = steps.indexOf(status);
+  return index >= 0 ? index : 0;
+}
+
 function OrdersPanel() {
   const list = useServerFn(getMyOrders);
 
@@ -179,49 +189,134 @@ function OrdersPanel() {
     );
   }
 
+  const steps = [
+    { key: "novo", label: "Pedido recebido" },
+    { key: "aguardando_pagamento", label: "Aguardando pagamento" },
+    { key: "pago", label: "Pagamento aprovado" },
+    { key: "separando", label: "Separando pedido" },
+    { key: "enviado", label: "Pedido enviado" },
+    { key: "entregue", label: "Entregue" },
+  ];
+
   return (
-    <div className="space-y-4">
-      {data.map((o: any) => (
-        <div key={o.id} className="bg-card border rounded p-5 space-y-2">
-          <div className="flex flex-wrap justify-between gap-2">
-            <div>
-              <div className="text-xs text-muted-foreground">
-                {new Date(o.created_at).toLocaleString("pt-BR")}
+    <div className="space-y-5">
+      {data.map((o: any) => {
+        const status = String(o.status ?? "novo");
+        const currentStep = getOrderStep(status);
+        const cancelled = status === "cancelado";
+        const items = Array.isArray(o.items) ? o.items : [];
+
+        return (
+          <div key={o.id} className="bg-card border rounded-lg p-5 space-y-5">
+            <div className="flex flex-wrap justify-between gap-3">
+              <div>
+                <div className="text-xs text-muted-foreground">
+                  {new Date(o.created_at).toLocaleString("pt-BR")}
+                </div>
+                <div className="font-medium">Pedido #{o.id.slice(0, 8)}</div>
+                <div className="text-xs text-muted-foreground mt-1">
+                  {items.length} {items.length === 1 ? "item" : "itens"}
+                </div>
               </div>
-              <div className="font-medium">Pedido #{o.id.slice(0, 8)}</div>
+
+              <div className="text-right">
+                <Badge
+                  variant={
+                    status === "entregue" || status === "concluido"
+                      ? "default"
+                      : status === "cancelado"
+                        ? "destructive"
+                        : "secondary"
+                  }
+                  className="capitalize"
+                >
+                  {formatOrderStatus(status)}
+                </Badge>
+
+                <div className="font-display text-xl mt-1">
+                  R$ {Number(o.subtotal ?? 0).toFixed(2)}
+                </div>
+              </div>
             </div>
 
-            <div className="text-right">
-              <Badge
-                variant={
-                  o.status === "entregue" || o.status === "concluido"
-                    ? "default"
-                    : o.status === "cancelado"
-                      ? "destructive"
-                      : "secondary"
-                }
-                className="capitalize"
-              >
-                {formatOrderStatus(String(o.status))}
-              </Badge>
-
-              <div className="font-display text-xl mt-1">
-                R$ {Number(o.subtotal ?? 0).toFixed(2)}
+            {cancelled ? (
+              <div className="rounded-md border border-destructive/30 bg-destructive/5 p-3 text-sm text-destructive">
+                Este pedido foi cancelado. Se tiver dúvidas, entre em contato com a loja.
               </div>
-            </div>
-          </div>
+            ) : (
+              <div className="space-y-3 border-t pt-4">
+                <div className="text-xs uppercase tracking-luxe text-muted-foreground">
+                  Acompanhamento do pedido
+                </div>
 
-          <div className="text-sm text-muted-foreground border-t pt-2">
-            {Array.isArray(o.items)
-              ? `${o.items.length} ${o.items.length === 1 ? "item" : "itens"}`
-              : "—"}
+                <div className="grid sm:grid-cols-6 gap-2">
+                  {steps.map((s, i) => {
+                    const done = i <= currentStep;
+
+                    return (
+                      <div
+                        key={s.key}
+                        className={`rounded border p-3 text-xs ${
+                          done
+                            ? "bg-foreground text-background border-foreground"
+                            : "bg-muted/40 text-muted-foreground"
+                        }`}
+                      >
+                        <div className="font-medium">{done ? "✓" : "•"} {s.label}</div>
+                      </div>
+                    );
+                  })}
+                </div>
+
+                {status === "enviado" && (
+                  <div className="text-sm text-muted-foreground">
+                    Seu pedido foi enviado. O rastreamento detalhado será informado pela loja assim que disponível.
+                  </div>
+                )}
+              </div>
+            )}
+
+            {!!items.length && (
+              <div className="border-t pt-4">
+                <div className="text-xs uppercase tracking-luxe text-muted-foreground mb-2">
+                  Itens do pedido
+                </div>
+
+                <div className="space-y-2">
+                  {items.map((it: any, i: number) => (
+                    <div key={i} className="flex justify-between gap-3 text-sm border-b pb-2 last:border-b-0">
+                      <div>
+                        <div className="font-medium">{it.name ?? "Produto"}</div>
+                        <div className="text-xs text-muted-foreground">
+                          {it.size ? `Tam: ${it.size} · ` : ""}
+                          {it.color ? `Cor: ${it.color} · ` : ""}
+                          Qtd: {it.qty ?? 1}
+                        </div>
+                      </div>
+
+                      <div className="text-right whitespace-nowrap">
+                        R$ {Number(it.price ?? 0).toFixed(2)}
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              </div>
+            )}
+
+            {o.notes && (
+              <div className="border-t pt-4 text-sm">
+                <div className="text-xs uppercase tracking-luxe text-muted-foreground mb-1">
+                  Observações da loja
+                </div>
+                <div className="text-muted-foreground">{o.notes}</div>
+              </div>
+            )}
           </div>
-        </div>
-      ))}
+        );
+      })}
     </div>
   );
 }
-
 function WishlistPanel() {
   const qc = useQueryClient();
   const list = useServerFn(getMyWishlist);
@@ -434,3 +529,4 @@ function ProfilePanel() {
     </div>
   );
 }
+

@@ -9,6 +9,7 @@ import { ShoppingBag, Minus, Plus, Trash2, CheckCircle } from "lucide-react";
 import { useCart, cart } from "@/hooks/use-cart";
 import { useAuth } from "@/hooks/use-auth";
 import { createOrder } from "@/lib/site.functions";
+import { getMyProfile } from "@/lib/account.functions";
 import { useServerFn } from "@tanstack/react-start";
 import { toast } from "sonner";
 
@@ -58,6 +59,7 @@ function CartBody({ onClose }: { onClose: () => void }) {
   const { user } = useAuth();
   const { items, subtotal } = useCart();
   const orderFn = useServerFn(createOrder);
+  const profileFn = useServerFn(getMyProfile);
 
   const [checkout, setCheckout] = useState(false);
   const [form, setForm] = useState({
@@ -104,18 +106,11 @@ function CartBody({ onClose }: { onClose: () => void }) {
 
       setCheckout(false);
 
-      setForm({
-        name: "",
-        whatsapp: "",
-        email: "",
-        notes: "",
-      });
+      setForm({ name: "", whatsapp: "", email: "", notes: "" });
 
       onClose();
 
-      navigate({
-        to: "/pedido-confirmado",
-      });
+      navigate({ to: "/pedido-confirmado" });
     } catch (e: any) {
       toast.error(e?.message ?? "Não foi possível confirmar o pedido.");
     } finally {
@@ -123,21 +118,29 @@ function CartBody({ onClose }: { onClose: () => void }) {
     }
   }
 
-  function handleCheckout() {
+  async function handleCheckout() {
     if (!user) {
       toast.info("Entre na sua conta para finalizar o pedido.");
-
-      navigate({
-        to: "/login",
-      });
-
+      navigate({ to: "/login" });
       return;
     }
 
-    setForm((current) => ({
-      ...current,
-      email: current.email || user.email || "",
-    }));
+    // Pre-fill with saved profile data when available
+    try {
+      const profile = await profileFn();
+      setForm((current) => ({
+        name: current.name || profile?.full_name || "",
+        whatsapp: current.whatsapp || profile?.phone || "",
+        email: current.email || user.email || "",
+        notes: current.notes,
+      }));
+    } catch {
+      // Profile fetch failed — fall back to email only, don't block checkout
+      setForm((current) => ({
+        ...current,
+        email: current.email || user.email || "",
+      }));
+    }
 
     setCheckout(true);
   }
@@ -179,12 +182,7 @@ function CartBody({ onClose }: { onClose: () => void }) {
 
             <Input
               value={form.name}
-              onChange={(e) =>
-                setForm({
-                  ...form,
-                  name: e.target.value,
-                })
-              }
+              onChange={(e) => setForm({ ...form, name: e.target.value })}
             />
           </div>
 
@@ -193,12 +191,7 @@ function CartBody({ onClose }: { onClose: () => void }) {
 
             <Input
               value={form.whatsapp}
-              onChange={(e) =>
-                setForm({
-                  ...form,
-                  whatsapp: e.target.value,
-                })
-              }
+              onChange={(e) => setForm({ ...form, whatsapp: e.target.value })}
               placeholder="(DDD) 9 9999-9999"
             />
           </div>
@@ -208,12 +201,7 @@ function CartBody({ onClose }: { onClose: () => void }) {
 
             <Input
               value={form.email}
-              onChange={(e) =>
-                setForm({
-                  ...form,
-                  email: e.target.value,
-                })
-              }
+              onChange={(e) => setForm({ ...form, email: e.target.value })}
             />
           </div>
 
@@ -223,25 +211,15 @@ function CartBody({ onClose }: { onClose: () => void }) {
             <Textarea
               rows={3}
               value={form.notes}
-              onChange={(e) =>
-                setForm({
-                  ...form,
-                  notes: e.target.value,
-                })
-              }
+              onChange={(e) => setForm({ ...form, notes: e.target.value })}
               placeholder="Cor, tamanho extra, presente..."
             />
           </div>
         </div>
 
         <div className="flex items-center justify-between pt-2 border-t">
-          <span className="text-sm text-muted-foreground">
-            Subtotal
-          </span>
-
-          <span className="font-display text-xl">
-            {brl(subtotal)}
-          </span>
+          <span className="text-sm text-muted-foreground">Subtotal</span>
+          <span className="font-display text-xl">{brl(subtotal)}</span>
         </div>
 
         <div className="flex gap-2">
@@ -253,13 +231,8 @@ function CartBody({ onClose }: { onClose: () => void }) {
             Voltar
           </Button>
 
-          <Button
-            onClick={finalize}
-            disabled={busy}
-            className="flex-1"
-          >
+          <Button onClick={finalize} disabled={busy} className="flex-1">
             <CheckCircle className="size-4 mr-2" />
-
             {busy ? "Confirmando..." : "Confirmar pedido"}
           </Button>
         </div>
@@ -284,9 +257,7 @@ function CartBody({ onClose }: { onClose: () => void }) {
               )}
 
               <div className="flex-1 min-w-0">
-                <p className="font-medium leading-tight truncate">
-                  {i.name}
-                </p>
+                <p className="font-medium leading-tight truncate">{i.name}</p>
 
                 <p className="text-xs text-muted-foreground mt-0.5">
                   {[i.size && `Tam ${i.size}`, i.color]
@@ -294,9 +265,7 @@ function CartBody({ onClose }: { onClose: () => void }) {
                     .join(" · ")}
                 </p>
 
-                <p className="text-sm mt-1">
-                  {brl(i.price)}
-                </p>
+                <p className="text-sm mt-1">{brl(i.price)}</p>
 
                 <div className="flex items-center gap-1 mt-2">
                   <button
@@ -306,9 +275,7 @@ function CartBody({ onClose }: { onClose: () => void }) {
                     <Minus className="size-3" />
                   </button>
 
-                  <span className="w-7 text-center text-sm">
-                    {i.qty}
-                  </span>
+                  <span className="w-7 text-center text-sm">{i.qty}</span>
 
                   <button
                     onClick={() => cart.setQty(k, i.qty + 1)}
@@ -333,13 +300,8 @@ function CartBody({ onClose }: { onClose: () => void }) {
 
       <div className="border-t p-4 space-y-3 bg-background">
         <div className="flex items-center justify-between">
-          <span className="text-sm text-muted-foreground">
-            Subtotal
-          </span>
-
-          <span className="font-display text-2xl">
-            {brl(subtotal)}
-          </span>
+          <span className="text-sm text-muted-foreground">Subtotal</span>
+          <span className="font-display text-2xl">{brl(subtotal)}</span>
         </div>
 
         <Button className="w-full" onClick={handleCheckout}>

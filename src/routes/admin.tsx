@@ -1,4 +1,4 @@
-import { createFileRoute, useNavigate, Link } from "@tanstack/react-router";
+﻿import { createFileRoute, useNavigate, Link } from "@tanstack/react-router";
 import { useEffect, useState } from "react";
 import { useServerFn } from "@tanstack/react-start";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
@@ -963,9 +963,13 @@ function slugify(s: string) {
 // ============ PEDIDOS ============
 const ORDER_STATUSES = [
   { v: "novo", l: "Novo" },
-  { v: "em_atendimento", l: "Em atendimento" },
-  { v: "concluido", l: "Concluído" },
+  { v: "aguardando_pagamento", l: "Aguardando pagamento" },
+  { v: "pago", l: "Pago" },
+  { v: "separando", l: "Separando" },
+  { v: "enviado", l: "Enviado" },
+  { v: "entregue", l: "Entregue" },
   { v: "cancelado", l: "Cancelado" },
+  { v: "concluido", l: "Concluído" },
 ] as const;
 
 function OrdersTab() {
@@ -1340,3 +1344,6 @@ function ReviewsTab() {
     </div>
   );
 }
+
+
+

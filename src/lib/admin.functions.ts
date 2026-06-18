@@ -1,4 +1,4 @@
-import { createServerFn } from "@tanstack/react-start";
+﻿import { createServerFn } from "@tanstack/react-start";
 import { z } from "zod";
 import { requireSupabaseAuth } from "@/integrations/supabase/auth-middleware";
 import { supabaseAdmin } from "@/integrations/supabase/client.server";
@@ -301,7 +301,16 @@ export const updateOrderStatus = createServerFn({ method: "POST" })
   .inputValidator((input: { id: string; status: string; notes?: string }) =>
     z.object({
       id: z.string().uuid(),
-      status: z.enum(["novo", "em_atendimento", "concluido", "cancelado"]),
+      status: z.enum([
+      "novo",
+      "aguardando_pagamento",
+      "pago",
+      "separando",
+      "enviado",
+      "entregue",
+      "cancelado",
+      "concluido",
+    ]),
       notes: z.string().max(2000).optional(),
     }).parse(input),
   )
@@ -395,5 +404,7 @@ export const listProductsLite = createServerFn({ method: "GET" })
     if (error) throw new Error(error.message);
     return data ?? [];
   });
+
+
 
 
