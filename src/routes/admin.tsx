@@ -34,7 +34,17 @@ import {
   TableCell,
 } from "@/components/ui/table";
 import { Badge } from "@/components/ui/badge";
-import { LogOut, Plus, Trash2, Upload, ExternalLink, Eye } from "lucide-react";
+import { LogOut, Plus, Trash2, Upload, ExternalLink, Eye, RotateCcw } from "lucide-react";
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from "@/components/ui/alert-dialog";
 import {
   checkIsAdmin,
   updateSiteSettings,
@@ -49,6 +59,9 @@ import {
   deleteBrand,
   listOrders,
   updateOrderStatus,
+  trashOrder,
+  restoreOrder,
+  deleteOrderPermanently,
   getAdminStats,
   getAdminSiteSettings,
   listReviewsAdmin,
