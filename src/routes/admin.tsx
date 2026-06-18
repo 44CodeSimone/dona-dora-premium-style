@@ -961,27 +961,180 @@ function slugify(s: string) {
 }
 
 // ============ PEDIDOS ============
+
+// Status definitions — single source of truth for this module.
+// To add a new status in a future phase (e.g. "lixeira"), append here only.
 const ORDER_STATUSES = [
-  { v: "novo", l: "Novo" },
-  { v: "aguardando_pagamento", l: "Aguardando pagamento" },
-  { v: "pago", l: "Pago" },
-  { v: "separando", l: "Separando" },
-  { v: "enviado", l: "Enviado" },
-  { v: "entregue", l: "Entregue" },
-  { v: "cancelado", l: "Cancelado" },
-  { v: "concluido", l: "Concluído" },
+  { v: "novo",                  l: "Novo" },
+  { v: "aguardando_pagamento",  l: "Aguardando pagamento" },
+  { v: "pago",                  l: "Pago" },
+  { v: "separando",             l: "Separando" },
+  { v: "enviado",               l: "Enviado" },
+  { v: "entregue",              l: "Entregue" },
+  { v: "cancelado",             l: "Cancelado" },
+  { v: "concluido",             l: "Concluído" },
 ] as const;
 
+type OrderStatus = (typeof ORDER_STATUSES)[number]["v"];
+
+// Derive the label for a given status value — used throughout the module.
+function orderStatusLabel(v: string): string {
+  return ORDER_STATUSES.find((s) => s.v === v)?.l ?? v;
+}
+
+// ── OrderDetailDialog ──────────────────────────────────────────────────────────
+// Isolated component so future phases (edit, trash, restore) only touch here.
+function OrderDetailDialog({
+  order,
+  onClose,
+}: {
+  order: any | null;
+  onClose: () => void;
+}) {
+  if (!order) return null;
+  return (
+    <Dialog open={!!order} onOpenChange={(o) => !o && onClose()}>
+      <DialogContent className="max-w-xl max-h-[90vh] overflow-y-auto">
+        <DialogHeader>
+          <DialogTitle>Pedido — {order.customer_name}</DialogTitle>
+        </DialogHeader>
+        <div className="space-y-3 text-sm">
+          <Row k="Data"        v={new Date(order.created_at).toLocaleString("pt-BR")} />
+          <Row k="Cliente"     v={order.customer_name} />
+          <Row k="WhatsApp"    v={order.customer_whatsapp} />
+          <Row k="E-mail"      v={order.customer_email} />
+          <Row k="Status"      v={orderStatusLabel(order.status)} />
+          <Row k="Total"       v={`R$ ${Number(order.subtotal ?? 0).toFixed(2)}`} />
+          <Row k="Observações" v={order.notes} />
+          <div className="border-t pt-3">
+            <div className="text-xs uppercase tracking-wider text-muted-foreground mb-2">
+              Itens
+            </div>
+            <div className="space-y-2">
+              {(order.items ?? []).map((it: any, i: number) => (
+                <div key={i} className="flex justify-between gap-2 border-b pb-1.5">
+                  <div className="flex-1">
+                    <div className="font-medium">{it.name}</div>
+                    <div className="text-xs text-muted-foreground">
+                      {it.size  && `Tam: ${it.size} · `}
+                      {it.color && `Cor: ${it.color} · `}
+                      Qtd: {it.qty ?? 1}
+                    </div>
+                  </div>
+                  <div className="text-right">R$ {Number(it.price ?? 0).toFixed(2)}</div>
+                </div>
+              ))}
+            </div>
+          </div>
+          {order.customer_whatsapp && (
+            <a
+              href={`https://wa.me/${String(order.customer_whatsapp).replace(/\D/g, "")}`}
+              target="_blank"
+              rel="noreferrer"
+              className="inline-flex items-center gap-2 mt-3 px-4 py-2 bg-foreground text-background text-xs uppercase tracking-luxe rounded"
+            >
+              Falar no WhatsApp <ExternalLink className="size-3" />
+            </a>
+          )}
+        </div>
+      </DialogContent>
+    </Dialog>
+  );
+}
+
+// ── OrderTable ────────────────────────────────────────────────────────────────
+// Renders a filtered list of orders. Reusable across all status tabs.
+function OrderTable({
+  orders,
+  onView,
+  onStatusChange,
+}: {
+  orders: any[];
+  onView: (order: any) => void;
+  onStatusChange: (id: string, status: OrderStatus) => void;
+}) {
+  if (orders.length === 0) {
+    return (
+      <div className="py-12 text-center text-sm text-muted-foreground">
+        Nenhum pedido neste agrupamento.
+      </div>
+    );
+  }
+
+  return (
+    <div className="bg-card rounded border overflow-x-auto">
+      <Table>
+        <TableHeader>
+          <TableRow>
+            <TableHead>Data</TableHead>
+            <TableHead>Cliente</TableHead>
+            <TableHead>WhatsApp</TableHead>
+            <TableHead>Itens</TableHead>
+            <TableHead>Total</TableHead>
+            <TableHead>Status</TableHead>
+            <TableHead></TableHead>
+          </TableRow>
+        </TableHeader>
+        <TableBody>
+          {orders.map((o: any) => (
+            <TableRow key={o.id}>
+              <TableCell className="text-xs">
+                {new Date(o.created_at).toLocaleString("pt-BR")}
+              </TableCell>
+              <TableCell className="font-medium">{o.customer_name}</TableCell>
+              <TableCell>{o.customer_whatsapp}</TableCell>
+              <TableCell className="text-xs text-muted-foreground">
+                {Array.isArray(o.items)
+                  ? `${o.items.length} ${o.items.length === 1 ? "item" : "itens"}`
+                  : "—"}
+              </TableCell>
+              <TableCell>R$ {Number(o.subtotal ?? 0).toFixed(2)}</TableCell>
+              <TableCell>
+                <Select
+                  value={o.status}
+                  onValueChange={(v) => onStatusChange(o.id, v as OrderStatus)}
+                >
+                  <SelectTrigger className="h-8 w-[170px]">
+                    <SelectValue />
+                  </SelectTrigger>
+                  <SelectContent>
+                    {ORDER_STATUSES.map((s) => (
+                      <SelectItem key={s.v} value={s.v}>{s.l}</SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              </TableCell>
+              <TableCell className="text-right">
+                <Button size="sm" variant="ghost" onClick={() => onView(o)}>
+                  <Eye className="size-4" />
+                </Button>
+              </TableCell>
+            </TableRow>
+          ))}
+        </TableBody>
+      </Table>
+    </div>
+  );
+}
+
+// ── OrdersTab ─────────────────────────────────────────────────────────────────
+// Organizes orders by status using tabs.
+// All filtering is done client-side over the cached React Query data —
+// no extra network requests when switching tabs.
 function OrdersTab() {
   const qc = useQueryClient();
-  const list = useServerFn(listOrders);
+  const list   = useServerFn(listOrders);
   const update = useServerFn(updateOrderStatus);
-  const { data: orders } = useQuery({ queryKey: ["orders"], queryFn: () => list() });
-  const [filter, setFilter] = useState<string>("all");
+
+  const { data: orders = [] } = useQuery({
+    queryKey: ["orders"],
+    queryFn: () => list(),
+  });
+
   const [viewing, setViewing] = useState<any | null>(null);
 
   const mut = useMutation({
-    mutationFn: (p: { id: string; status: any; notes?: string }) => update({ data: p }),
+    mutationFn: (p: { id: string; status: OrderStatus }) => update({ data: p }),
     onSuccess: () => {
       toast.success("Status atualizado.");
       qc.invalidateQueries({ queryKey: ["orders"] });
@@ -989,111 +1142,55 @@ function OrdersTab() {
     onError: (e: any) => toast.error(e?.message ?? "Erro"),
   });
 
-  const filtered = (orders ?? []).filter((o: any) => filter === "all" || o.status === filter);
+  // Compute per-status counts from in-memory data — no extra queries.
+  function countByStatus(status: string): number {
+    return (orders as any[]).filter((o) => o.status === status).length;
+  }
+
+  function filterByStatus(status: string): any[] {
+    return (orders as any[]).filter((o) => o.status === status);
+  }
+
+  const total = (orders as any[]).length;
 
   return (
     <div className="space-y-4">
-      <div className="flex justify-between items-center flex-wrap gap-3">
-        <h2 className="font-display text-2xl">Pedidos ({orders?.length ?? 0})</h2>
-        <Select value={filter} onValueChange={setFilter}>
-          <SelectTrigger className="w-[220px]"><SelectValue /></SelectTrigger>
-          <SelectContent>
-            <SelectItem value="all">Todos os status</SelectItem>
-            {ORDER_STATUSES.map((s) => <SelectItem key={s.v} value={s.v}>{s.l}</SelectItem>)}
-          </SelectContent>
-        </Select>
-      </div>
+      <h2 className="font-display text-2xl">Pedidos ({total})</h2>
 
-      <div className="bg-card rounded border overflow-x-auto">
-        <Table>
-          <TableHeader>
-            <TableRow>
-              <TableHead>Data</TableHead>
-              <TableHead>Cliente</TableHead>
-              <TableHead>WhatsApp</TableHead>
-              <TableHead>Itens</TableHead>
-              <TableHead>Total</TableHead>
-              <TableHead>Status</TableHead>
-              <TableHead></TableHead>
-            </TableRow>
-          </TableHeader>
-          <TableBody>
-            {filtered.map((o: any) => (
-              <TableRow key={o.id}>
-                <TableCell className="text-xs">{new Date(o.created_at).toLocaleString("pt-BR")}</TableCell>
-                <TableCell className="font-medium">{o.customer_name}</TableCell>
-                <TableCell>{o.customer_whatsapp}</TableCell>
-                <TableCell className="text-xs text-muted-foreground">
-                  {Array.isArray(o.items) ? `${o.items.length} ${o.items.length === 1 ? "item" : "itens"}` : "—"}
-                </TableCell>
-                <TableCell>R$ {Number(o.subtotal ?? 0).toFixed(2)}</TableCell>
-                <TableCell>
-                  <Select
-                    value={o.status}
-                    onValueChange={(v) => mut.mutate({ id: o.id, status: v as any })}
-                  >
-                    <SelectTrigger className="h-8 w-[160px]"><SelectValue /></SelectTrigger>
-                    <SelectContent>
-                      {ORDER_STATUSES.map((s) => <SelectItem key={s.v} value={s.v}>{s.l}</SelectItem>)}
-                    </SelectContent>
-                  </Select>
-                </TableCell>
-                <TableCell className="text-right">
-                  <Button size="sm" variant="ghost" onClick={() => setViewing(o)}>
-                    <Eye className="size-4" />
-                  </Button>
-                </TableCell>
-              </TableRow>
-            ))}
-            {!filtered.length && (
-              <TableRow><TableCell colSpan={7} className="text-center text-muted-foreground py-10">Nenhum pedido.</TableCell></TableRow>
-            )}
-          </TableBody>
-        </Table>
-      </div>
+      <Tabs defaultValue="todos">
+        <TabsList className="flex flex-wrap h-auto gap-1">
+          <TabsTrigger value="todos">
+            Todos ({total})
+          </TabsTrigger>
+          {ORDER_STATUSES.map((s) => (
+            <TabsTrigger key={s.v} value={s.v}>
+              {s.l} ({countByStatus(s.v)})
+            </TabsTrigger>
+          ))}
+        </TabsList>
 
-      <Dialog open={!!viewing} onOpenChange={(o) => !o && setViewing(null)}>
-        <DialogContent className="max-w-xl max-h-[90vh] overflow-y-auto">
-          <DialogHeader><DialogTitle>Pedido — {viewing?.customer_name}</DialogTitle></DialogHeader>
-          {viewing && (
-            <div className="space-y-3 text-sm">
-              <Row k="Data" v={new Date(viewing.created_at).toLocaleString("pt-BR")} />
-              <Row k="Cliente" v={viewing.customer_name} />
-              <Row k="WhatsApp" v={viewing.customer_whatsapp} />
-              <Row k="E-mail" v={viewing.customer_email} />
-              <Row k="Status" v={ORDER_STATUSES.find((s) => s.v === viewing.status)?.l ?? viewing.status} />
-              <Row k="Total" v={`R$ ${Number(viewing.subtotal ?? 0).toFixed(2)}`} />
-              <Row k="Observações" v={viewing.notes} />
-              <div className="border-t pt-3">
-                <div className="text-xs uppercase tracking-wider text-muted-foreground mb-2">Itens</div>
-                <div className="space-y-2">
-                  {(viewing.items ?? []).map((it: any, i: number) => (
-                    <div key={i} className="flex justify-between gap-2 border-b pb-1.5">
-                      <div className="flex-1">
-                        <div className="font-medium">{it.name}</div>
-                        <div className="text-xs text-muted-foreground">
-                          {it.size && `Tam: ${it.size} · `}{it.color && `Cor: ${it.color} · `}Qtd: {it.qty ?? 1}
-                        </div>
-                      </div>
-                      <div className="text-right">R$ {Number(it.price ?? 0).toFixed(2)}</div>
-                    </div>
-                  ))}
-                </div>
-              </div>
-              {viewing.customer_whatsapp && (
-                <a
-                  href={`https://wa.me/${String(viewing.customer_whatsapp).replace(/\D/g, "")}`}
-                  target="_blank"
-                  rel="noreferrer"
-                  className="inline-flex items-center gap-2 mt-3 px-4 py-2 bg-foreground text-background text-xs uppercase tracking-luxe rounded"
-                >
-                  Falar no WhatsApp <ExternalLink className="size-3" />
-                </a>
-              )}
-            </div>
-          )}
-        </DialogContent>
-      </Dialog>
+        {/* "Todos" shows the full list */}
+        <TabsContent value="todos" className="mt-4">
+          <OrderTable
+            orders={orders as any[]}
+            onView={setViewing}
+            onStatusChange={(id, status) => mut.mutate({ id, status })}
+          />
+        </TabsContent>
+
+        {/* One tab per status — each renders only its own orders */}
+        {ORDER_STATUSES.map((s) => (
+          <TabsContent key={s.v} value={s.v} className="mt-4">
+            <OrderTable
+              orders={filterByStatus(s.v)}
+              onView={setViewing}
+              onStatusChange={(id, status) => mut.mutate({ id, status })}
+            />
+          </TabsContent>
+        ))}
+      </Tabs>
+
+      <OrderDetailDialog order={viewing} onClose={() => setViewing(null)} />
     </div>
   );
 }
