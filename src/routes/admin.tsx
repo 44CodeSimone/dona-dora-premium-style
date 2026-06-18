@@ -34,7 +34,17 @@ import {
   TableCell,
 } from "@/components/ui/table";
 import { Badge } from "@/components/ui/badge";
-import { LogOut, Plus, Trash2, Upload, ExternalLink, Eye } from "lucide-react";
+import { LogOut, Plus, Trash2, Upload, ExternalLink, Eye, RotateCcw } from "lucide-react";
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from "@/components/ui/alert-dialog";
 import {
   checkIsAdmin,
   updateSiteSettings,
@@ -49,6 +59,9 @@ import {
   deleteBrand,
   listOrders,
   updateOrderStatus,
+  trashOrder,
+  restoreOrder,
+  deleteOrderPermanently,
   getAdminStats,
   getAdminSiteSettings,
   listReviewsAdmin,
@@ -976,9 +989,15 @@ function OrdersTab() {
   const qc = useQueryClient();
   const list = useServerFn(listOrders);
   const update = useServerFn(updateOrderStatus);
+  const trashFn = useServerFn(trashOrder);
+  const restoreFn = useServerFn(restoreOrder);
+  const deleteFn = useServerFn(deleteOrderPermanently);
   const { data: orders } = useQuery({ queryKey: ["orders"], queryFn: () => list() });
+  const [view, setView] = useState<"active" | "trash">("active");
   const [filter, setFilter] = useState<string>("all");
   const [viewing, setViewing] = useState<any | null>(null);
+  const [confirmTrash, setConfirmTrash] = useState<any | null>(null);
+  const [confirmDelete, setConfirmDelete] = useState<any | null>(null);
 
   const mut = useMutation({
     mutationFn: (p: { id: string; status: any; notes?: string }) => update({ data: p }),
@@ -989,19 +1008,77 @@ function OrdersTab() {
     onError: (e: any) => toast.error(e?.message ?? "Erro"),
   });
 
-  const filtered = (orders ?? []).filter((o: any) => filter === "all" || o.status === filter);
+  const trashMut = useMutation({
+    mutationFn: (id: string) => trashFn({ data: { id } }),
+    onSuccess: () => {
+      toast.success("Pedido movido para a lixeira.");
+      setConfirmTrash(null);
+      qc.invalidateQueries({ queryKey: ["orders"] });
+    },
+    onError: (e: any) => toast.error(e?.message ?? "Erro"),
+  });
+
+  const restoreMut = useMutation({
+    mutationFn: (id: string) => restoreFn({ data: { id } }),
+    onSuccess: () => {
+      toast.success("Pedido restaurado.");
+      qc.invalidateQueries({ queryKey: ["orders"] });
+    },
+    onError: (e: any) => toast.error(e?.message ?? "Erro"),
+  });
+
+  const deleteMut = useMutation({
+    mutationFn: (id: string) => deleteFn({ data: { id } }),
+    onSuccess: () => {
+      toast.success("Pedido excluído permanentemente.");
+      setConfirmDelete(null);
+      setViewing(null);
+      qc.invalidateQueries({ queryKey: ["orders"] });
+    },
+    onError: (e: any) => toast.error(e?.message ?? "Erro"),
+  });
+
+  const all = orders ?? [];
+  const activeOrders = all.filter((o: any) => o.status !== "trash");
+  const trashedOrders = all.filter((o: any) => o.status === "trash");
+  const baseList = view === "trash" ? trashedOrders : activeOrders;
+  const filtered =
+    view === "trash"
+      ? baseList
+      : baseList.filter((o: any) => filter === "all" || o.status === filter);
 
   return (
     <div className="space-y-4">
       <div className="flex justify-between items-center flex-wrap gap-3">
-        <h2 className="font-display text-2xl">Pedidos ({orders?.length ?? 0})</h2>
-        <Select value={filter} onValueChange={setFilter}>
-          <SelectTrigger className="w-[220px]"><SelectValue /></SelectTrigger>
-          <SelectContent>
-            <SelectItem value="all">Todos os status</SelectItem>
-            {ORDER_STATUSES.map((s) => <SelectItem key={s.v} value={s.v}>{s.l}</SelectItem>)}
-          </SelectContent>
-        </Select>
+        <h2 className="font-display text-2xl">
+          Pedidos ({activeOrders.length})
+        </h2>
+        <div className="flex items-center gap-2 flex-wrap">
+          <Button
+            size="sm"
+            variant={view === "active" ? "default" : "outline"}
+            onClick={() => setView("active")}
+          >
+            Operacional
+          </Button>
+          <Button
+            size="sm"
+            variant={view === "trash" ? "default" : "outline"}
+            onClick={() => setView("trash")}
+          >
+            <Trash2 className="size-4 mr-1" />
+            Lixeira ({trashedOrders.length})
+          </Button>
+          {view === "active" && (
+            <Select value={filter} onValueChange={setFilter}>
+              <SelectTrigger className="w-[220px]"><SelectValue /></SelectTrigger>
+              <SelectContent>
+                <SelectItem value="all">Todos os status</SelectItem>
+                {ORDER_STATUSES.map((s) => <SelectItem key={s.v} value={s.v}>{s.l}</SelectItem>)}
+              </SelectContent>
+            </Select>
+          )}
+        </div>
       </div>
 
       <div className="bg-card rounded border overflow-x-auto">
@@ -1013,7 +1090,7 @@ function OrdersTab() {
               <TableHead>WhatsApp</TableHead>
               <TableHead>Itens</TableHead>
               <TableHead>Total</TableHead>
-              <TableHead>Status</TableHead>
+              <TableHead>{view === "trash" ? "Status anterior" : "Status"}</TableHead>
               <TableHead></TableHead>
             </TableRow>
           </TableHeader>
@@ -1028,25 +1105,68 @@ function OrdersTab() {
                 </TableCell>
                 <TableCell>R$ {Number(o.subtotal ?? 0).toFixed(2)}</TableCell>
                 <TableCell>
-                  <Select
-                    value={o.status}
-                    onValueChange={(v) => mut.mutate({ id: o.id, status: v as any })}
-                  >
-                    <SelectTrigger className="h-8 w-[160px]"><SelectValue /></SelectTrigger>
-                    <SelectContent>
-                      {ORDER_STATUSES.map((s) => <SelectItem key={s.v} value={s.v}>{s.l}</SelectItem>)}
-                    </SelectContent>
-                  </Select>
+                  {view === "trash" ? (
+                    <Badge variant="secondary">
+                      {ORDER_STATUSES.find((s) => s.v === o.previous_status)?.l ?? o.previous_status ?? "—"}
+                    </Badge>
+                  ) : (
+                    <Select
+                      value={o.status}
+                      onValueChange={(v) => mut.mutate({ id: o.id, status: v as any })}
+                    >
+                      <SelectTrigger className="h-8 w-[160px]"><SelectValue /></SelectTrigger>
+                      <SelectContent>
+                        {ORDER_STATUSES.map((s) => <SelectItem key={s.v} value={s.v}>{s.l}</SelectItem>)}
+                      </SelectContent>
+                    </Select>
+                  )}
                 </TableCell>
                 <TableCell className="text-right">
-                  <Button size="sm" variant="ghost" onClick={() => setViewing(o)}>
-                    <Eye className="size-4" />
-                  </Button>
+                  <div className="inline-flex items-center gap-1">
+                    <Button size="sm" variant="ghost" onClick={() => setViewing(o)} title="Visualizar">
+                      <Eye className="size-4" />
+                    </Button>
+                    {view === "active" ? (
+                      <Button
+                        size="sm"
+                        variant="ghost"
+                        onClick={() => setConfirmTrash(o)}
+                        title="Mover para a lixeira"
+                      >
+                        <Trash2 className="size-4" />
+                      </Button>
+                    ) : (
+                      <>
+                        <Button
+                          size="sm"
+                          variant="ghost"
+                          onClick={() => restoreMut.mutate(o.id)}
+                          disabled={restoreMut.isPending}
+                          title="Restaurar"
+                        >
+                          <RotateCcw className="size-4" />
+                        </Button>
+                        <Button
+                          size="sm"
+                          variant="ghost"
+                          onClick={() => setConfirmDelete(o)}
+                          title="Excluir permanentemente"
+                          className="text-destructive hover:text-destructive"
+                        >
+                          <Trash2 className="size-4" />
+                        </Button>
+                      </>
+                    )}
+                  </div>
                 </TableCell>
               </TableRow>
             ))}
             {!filtered.length && (
-              <TableRow><TableCell colSpan={7} className="text-center text-muted-foreground py-10">Nenhum pedido.</TableCell></TableRow>
+              <TableRow>
+                <TableCell colSpan={7} className="text-center text-muted-foreground py-10">
+                  {view === "trash" ? "A lixeira está vazia." : "Nenhum pedido."}
+                </TableCell>
+              </TableRow>
             )}
           </TableBody>
         </Table>
@@ -1061,7 +1181,14 @@ function OrdersTab() {
               <Row k="Cliente" v={viewing.customer_name} />
               <Row k="WhatsApp" v={viewing.customer_whatsapp} />
               <Row k="E-mail" v={viewing.customer_email} />
-              <Row k="Status" v={ORDER_STATUSES.find((s) => s.v === viewing.status)?.l ?? viewing.status} />
+              <Row
+                k="Status"
+                v={
+                  viewing.status === "trash"
+                    ? `Lixeira (anterior: ${ORDER_STATUSES.find((s) => s.v === viewing.previous_status)?.l ?? viewing.previous_status ?? "—"})`
+                    : ORDER_STATUSES.find((s) => s.v === viewing.status)?.l ?? viewing.status
+                }
+              />
               <Row k="Total" v={`R$ ${Number(viewing.subtotal ?? 0).toFixed(2)}`} />
               <Row k="Observações" v={viewing.notes} />
               <div className="border-t pt-3">
@@ -1094,6 +1221,47 @@ function OrdersTab() {
           )}
         </DialogContent>
       </Dialog>
+
+      <AlertDialog open={!!confirmTrash} onOpenChange={(o) => !o && setConfirmTrash(null)}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>Mover pedido para a lixeira?</AlertDialogTitle>
+            <AlertDialogDescription>
+              Tem certeza de que deseja mover este pedido para a lixeira? Ele sairá das listas operacionais e poderá ser restaurado a partir da Lixeira.
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel>Cancelar</AlertDialogCancel>
+            <AlertDialogAction
+              onClick={() => confirmTrash && trashMut.mutate(confirmTrash.id)}
+              disabled={trashMut.isPending}
+            >
+              Mover para a lixeira
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
+
+      <AlertDialog open={!!confirmDelete} onOpenChange={(o) => !o && setConfirmDelete(null)}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>Excluir permanentemente?</AlertDialogTitle>
+            <AlertDialogDescription>
+              Tem certeza de que deseja excluir permanentemente este pedido? Esta ação não pode ser desfeita.
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel>Cancelar</AlertDialogCancel>
+            <AlertDialogAction
+              onClick={() => confirmDelete && deleteMut.mutate(confirmDelete.id)}
+              disabled={deleteMut.isPending}
+              className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
+            >
+              Excluir permanentemente
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
     </div>
   );
 }

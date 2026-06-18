@@ -323,6 +323,99 @@ export const updateOrderStatus = createServerFn({ method: "POST" })
     return { ok: true };
   });
 
+// Move an order to the trash bin. Preserves the previous status so it can be restored.
+export const trashOrder = createServerFn({ method: "POST" })
+  .middleware([requireSupabaseAuth])
+  .inputValidator((input: { id: string }) =>
+    z.object({ id: z.string().uuid() }).parse(input),
+  )
+  .handler(async ({ data, context }) => {
+    await assertAdmin(context.userId);
+    const { data: current, error: readErr } = await supabaseAdmin
+      .from("orders")
+      .select("status")
+      .eq("id", data.id)
+      .maybeSingle();
+    if (readErr) throw new Error(readErr.message);
+    if (!current) throw new Error("Pedido não encontrado");
+    if (current.status === "trash") return { ok: true };
+    const { error } = await supabaseAdmin
+      .from("orders")
+      .update({
+        status: "trash",
+        previous_status: current.status,
+        updated_at: new Date().toISOString(),
+      })
+      .eq("id", data.id);
+    if (error) throw new Error(error.message);
+    return { ok: true };
+  });
+
+// Restore an order from the trash bin to its previous status (falls back to "novo").
+export const restoreOrder = createServerFn({ method: "POST" })
+  .middleware([requireSupabaseAuth])
+  .inputValidator((input: { id: string }) =>
+    z.object({ id: z.string().uuid() }).parse(input),
+  )
+  .handler(async ({ data, context }) => {
+    await assertAdmin(context.userId);
+    const { data: current, error: readErr } = await supabaseAdmin
+      .from("orders")
+      .select("status, previous_status")
+      .eq("id", data.id)
+      .maybeSingle();
+    if (readErr) throw new Error(readErr.message);
+    if (!current) throw new Error("Pedido não encontrado");
+    if (current.status !== "trash") return { ok: true, status: current.status };
+    const allowed = new Set([
+      "novo",
+      "aguardando_pagamento",
+      "pago",
+      "separando",
+      "enviado",
+      "entregue",
+      "cancelado",
+      "concluido",
+    ]);
+    const restoreTo =
+      current.previous_status && allowed.has(current.previous_status)
+        ? current.previous_status
+        : "novo";
+    const { error } = await supabaseAdmin
+      .from("orders")
+      .update({
+        status: restoreTo,
+        previous_status: null,
+        updated_at: new Date().toISOString(),
+      })
+      .eq("id", data.id);
+    if (error) throw new Error(error.message);
+    return { ok: true, status: restoreTo };
+  });
+
+// Permanently delete an order. Only allowed for orders already in trash.
+export const deleteOrderPermanently = createServerFn({ method: "POST" })
+  .middleware([requireSupabaseAuth])
+  .inputValidator((input: { id: string }) =>
+    z.object({ id: z.string().uuid() }).parse(input),
+  )
+  .handler(async ({ data, context }) => {
+    await assertAdmin(context.userId);
+    const { data: current, error: readErr } = await supabaseAdmin
+      .from("orders")
+      .select("status")
+      .eq("id", data.id)
+      .maybeSingle();
+    if (readErr) throw new Error(readErr.message);
+    if (!current) return { ok: true };
+    if (current.status !== "trash") {
+      throw new Error("Mova o pedido para a lixeira antes de excluir permanentemente.");
+    }
+    const { error } = await supabaseAdmin.from("orders").delete().eq("id", data.id);
+    if (error) throw new Error(error.message);
+    return { ok: true };
+  });
+
 // ------ DASHBOARD ------
 export const getAdminStats = createServerFn({ method: "GET" })
   .middleware([requireSupabaseAuth])
