@@ -89,40 +89,88 @@ export const getPublicBrands = createServerFn({ method: "GET" }).handler(async (
   return data;
 });
 
-// Anonymous checkout: cria o pedido a partir do carrinho
+// Checkout autenticado: o navegador envia apenas IDs e quantidades.
+// Preços, nomes, disponibilidade e estoque são sempre revalidados no servidor.
 const orderItemSchema = z.object({
-  product_id: z.string().uuid().optional().nullable(),
-  name: z.string().min(1).max(200),
+  product_id: z.string().uuid(),
   size: z.string().max(40).optional().nullable(),
   color: z.string().max(40).optional().nullable(),
   qty: z.number().int().min(1).max(99),
-  price: z.number().min(0),
 });
 
 const orderSchema = z.object({
   customer_name: z.string().min(1).max(120),
   customer_whatsapp: z.string().min(8).max(30),
-  customer_email: z.string().email().max(160).optional().nullable(),
   notes: z.string().max(2000).optional().nullable(),
   items: z.array(orderItemSchema).min(1).max(50),
-  subtotal: z.number().min(0),
 });
 
 export const createOrder = createServerFn({ method: "POST" })
   .middleware([requireSupabaseAuth])
   .inputValidator((input) => orderSchema.parse(input))
   .handler(async ({ data, context }) => {
+    const productIds = [...new Set(data.items.map((item) => item.product_id))];
+    const { data: products, error: productsError } = await supabaseAdmin
+      .from("products")
+      .select("id,name,price,promo,promo_price,available,stock,sizes,colors")
+      .in("id", productIds)
+      .eq("active", true);
+
+    if (productsError) throw new Error(productsError.message);
+
+    const productById = new Map((products ?? []).map((product) => [product.id, product]));
+    if (productById.size !== productIds.length) {
+      throw new Error("Um dos itens do pedido não está mais disponível.");
+    }
+
+    const pricedItems = data.items.map((item) => {
+      const product = productById.get(item.product_id);
+      if (!product || product.available === false) {
+        throw new Error("Um dos itens do pedido não está mais disponível.");
+      }
+
+      const sizes = Array.isArray(product.sizes) ? product.sizes : [];
+      const colors = Array.isArray(product.colors) ? product.colors : [];
+      if (item.size && sizes.length > 0 && !sizes.includes(item.size)) {
+        throw new Error(`O tamanho selecionado para ${product.name} não está disponível.`);
+      }
+      if (item.color && colors.length > 0 && !colors.includes(item.color)) {
+        throw new Error(`A cor selecionada para ${product.name} não está disponível.`);
+      }
+      if (typeof product.stock === "number" && item.qty > product.stock) {
+        throw new Error(`Estoque insuficiente para ${product.name}.`);
+      }
+
+      const unitPrice = product.promo && product.promo_price != null
+        ? Number(product.promo_price)
+        : Number(product.price);
+      if (!Number.isFinite(unitPrice) || unitPrice < 0) {
+        throw new Error("Um item do catálogo está com preço inválido.");
+      }
+
+      return {
+        product_id: product.id,
+        name: product.name,
+        size: item.size ?? null,
+        color: item.color ?? null,
+        qty: item.qty,
+        price: unitPrice,
+      };
+    });
+
+    const subtotal = Math.round(
+      pricedItems.reduce((total, item) => total + item.price * item.qty, 0) * 100,
+    ) / 100;
+
     const { data: row, error } = await supabaseAdmin
       .from("orders")
       .insert({
         customer_name: data.customer_name,
         customer_whatsapp: data.customer_whatsapp,
-        // Prefer the authenticated user's email over the submitted value
-        // to prevent impersonation via the customer_email field.
-        customer_email: context.claims?.email ?? data.customer_email ?? null,
+        customer_email: context.claims?.email ?? null,
         notes: data.notes ?? null,
-        items: data.items,
-        subtotal: data.subtotal,
+        items: pricedItems,
+        subtotal,
         status: "novo",
       })
       .select("id")
