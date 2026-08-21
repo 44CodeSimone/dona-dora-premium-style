@@ -1,0 +1,1 @@
+DROP POLICY IF EXISTS orders_public_insert ON public.orders;
