@@ -303,6 +303,7 @@ export type Database = {
           id: string
           items: Json
           notes: string | null
+          previous_status: string | null
           status: string
           subtotal: number
           updated_at: string
@@ -315,6 +316,7 @@ export type Database = {
           id?: string
           items?: Json
           notes?: string | null
+          previous_status?: string | null
           status?: string
           subtotal?: number
           updated_at?: string
@@ -327,6 +329,7 @@ export type Database = {
           id?: string
           items?: Json
           notes?: string | null
+          previous_status?: string | null
           status?: string
           subtotal?: number
           updated_at?: string
@@ -767,6 +770,7 @@ export type Database = {
         Args: { message_id: number; queue_name: string }
         Returns: boolean
       }
+      email_queue_dispatch: { Args: never; Returns: undefined }
       enqueue_email: {
         Args: { payload: Json; queue_name: string }
         Returns: number
