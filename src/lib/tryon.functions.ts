@@ -121,7 +121,7 @@ export const submitTryOn = createServerFn({ method: "POST" })
   .inputValidator((input) => submitSchema.parse(input))
   .handler(async ({ data, context }) => {
     const { userId } = context;
-    let providerPreviewUrl: string | null = null;
+    const providerPreviewUrl: string | null = null;
 
     // Toggle global
     const { data: settings } = await supabaseAdmin

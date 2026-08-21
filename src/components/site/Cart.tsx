@@ -86,16 +86,12 @@ function CartBody({ onClose }: { onClose: () => void }) {
         data: {
           customer_name: form.name.trim(),
           customer_whatsapp: form.whatsapp.trim(),
-          customer_email: form.email.trim() || user?.email || null,
           notes: form.notes.trim() || null,
-          subtotal,
           items: items.map((i) => ({
             product_id: i.product_id,
-            name: i.name,
             size: i.size ?? null,
             color: i.color ?? null,
             qty: i.qty,
-            price: i.price,
           })),
         },
       });

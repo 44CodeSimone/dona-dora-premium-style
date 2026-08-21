@@ -21,7 +21,9 @@ function emit() {
   if (typeof window !== "undefined") {
     try {
       localStorage.setItem(STORAGE_KEY, JSON.stringify(state));
-    } catch {}
+    } catch {
+      /* ignore storage quota/access error */
+    }
   }
 }
 
@@ -33,7 +35,9 @@ function loadOnce() {
       const parsed = JSON.parse(raw);
       if (parsed?.items && Array.isArray(parsed.items)) state = { items: parsed.items };
     }
-  } catch {}
+  } catch {
+    /* ignore storage parse/access error */
+  }
 }
 let loaded = false;
 
