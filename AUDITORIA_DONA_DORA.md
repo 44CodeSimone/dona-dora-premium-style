@@ -1,9 +1,9 @@
 # Auditoria Técnica — Dona Dora Boutique Premium
 
-> **Status:** Relatório da Auditoria do Repositório  
-> **Repositório:** `dona-dora-premium-style`  
-> **Ramo:** `security/remediate-secrets`  
-> **HEAD:** `d1b902a`
+> **Status:** Relatório da Auditoria do Repositório
+> **Repositório:** `dona-dora-premium-style`
+> **Ramo:** `docs/reconcile-security-state`
+> **Base Remote:** `origin/main` (`7cec064`)
 
 ---
 
@@ -70,10 +70,9 @@ Esta auditoria documenta o estado real de implementação da aplicação **Dona 
 - **Classificação:** **NOT IMPLEMENTED / NOT AVAILABLE**
 
 ### 2.12 Segurança do Banco de Dados (RLS `orders`)
-- **Documento:** [`DATABASE_SECURITY_REMEDIATION_PROPOSAL.md`](file:///C:/Users/simon/OneDrive/Documentos/dona-dora-premium-style/DATABASE_SECURITY_REMEDIATION_PROPOSAL.md).
-- **Descrição:** Remoção da política RLS `orders_public_insert` que permite inserção direta no banco sem passar pelo servidor.
-- **Declaração Oficial:** `The direct public insert policy for orders remains a known security remediation proposal and has NOT been implemented or executed.`
-- **Classificação:** **NOT IMPLEMENTED** (Proposta documentada, mas não executada no banco de produção).
+- **Documentos:** [`SECURITY.md`](file:///C:/Users/simon/OneDrive/Documentos/dona-dora-premium-style/SECURITY.md) e [`supabase/migrations/20260821234621_8a71a813-dcc7-4c7c-9081-7e0ec09519b0.sql`](file:///C:/Users/simon/OneDrive/Documentos/dona-dora-premium-style/supabase/migrations/20260821234621_8a71a813-dcc7-4c7c-9081-7e0ec09519b0.sql).
+- **Descrição:** Remoção executada da política RLS `orders_public_insert` e migração integrada na história remota (`origin/main` no commit `7cec064`).
+- **Classificação:** **EXISTS AND VERIFIED** (Removida no Supabase remoto; RLS ativado e checkout server-side reforçado).
 
 ### 2.13 Qualidade de Código e Tipagem TypeScript
 - **Descrição:** 93 ocorrências de `@typescript-eslint/no-explicit-any` e 1.630 avisos de formatação Prettier. O linter completo não passa.
@@ -85,7 +84,7 @@ Esta auditoria documenta o estado real de implementação da aplicação **Dona 
 
 | Categoria | Funcionalidades Incluídas |
 | :--- | :--- |
-| **EXISTS AND VERIFIED** | Vitrine Pública, Catálogo, Carrinho, Checkout Server-Side, Autenticação, Área do Cliente, Painel Admin, Assistente Dora, Provador Virtual OpenAI, E-mails Transacionais Lovable. |
-| **NOT VERIFIED** | Estado do ambiente de produção remoto do Supabase e sincronização ativa com a plataforma web Lovable. |
-| **NOT IMPLEMENTED** | Suíte de testes automatizados e remoção da política RLS `orders_public_insert` no banco de dados. |
+| **EXISTS AND VERIFIED** | Vitrine Pública, Catálogo, Carrinho, Checkout Server-Side, Autenticação, Área do Cliente, Painel Admin, Assistente Dora, Provador Virtual OpenAI, E-mails Transacionais Lovable, Remoção de `orders_public_insert` no Supabase remoto. |
+| **NOT VERIFIED** | Sincronização ativa das novas tabelas com o ambiente web visual do Lovable. |
+| **NOT IMPLEMENTED** | Suíte de testes automatizados no `package.json`. |
 | **TECHNICAL DEBT** | 93 ocorrências de `any` explícito no código e formatação Prettier diferida. |
