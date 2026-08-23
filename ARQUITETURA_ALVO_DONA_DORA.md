@@ -1,70 +1,75 @@
 # Arquitetura Alvo — Dona Dora Boutique Premium
 
-> **Status:** Especificação de Arquitetura de Referência  
-> **Repositório:** `dona-dora-premium-style`  
-> **Ramo:** `security/remediate-secrets`  
-> **HEAD:** `d1b902a`
+> **Status:** Especificação Arquitetural e Fronteiras de Segurança
+> **Repositório:** `dona-dora-premium-style`
+> **Ramo:** `docs/reconcile-security-state`
+> **Base Remote:** `origin/main` (`7cec064`)
 
 ---
 
 ## 1. Visão Geral da Arquitetura
 
-A arquitetura do **Dona Dora Boutique Premium** foi projetada para combinar uma experiência de usuário (UX) fluida e moderna no frontend com uma **fronteira de segurança rígida** no backend (Server-Side Rendering e Server Functions).
+O **Dona Dora Boutique Premium** foi construído sobre uma arquitetura moderna de aplicação web full-stack SSR (Server-Side Rendering) utilizando **TanStack Start** (baseado em Vite e TanStack Router), **TypeScript**, **Tailwind CSS** e **Supabase** como backend de banco de dados e autenticação.
 
 ```
-+-----------------------------------------------------------------------------------+
-|                                 CLIENTE (BROWSER)                                 |
-|  React 18 + Vite | TanStack Router | Client Cart (useCart) | UI Components (Shadcn) |
-+-----------------------------------------------------------------------------------+
-                                         |
-                                         | HTTP / Server Function Invocation
-                                         v
-+-----------------------------------------------------------------------------------+
-|                            CAMADA SERVIDOR (SSR / NODE)                           |
-|  TanStack Start (createServerFn) | Middleware (requireSupabaseAuth) | assertAdmin |
-|  - Validação de Schemas Zod                                                        |
-|  - Reconsulta Autoritativa de Preços e Estoque no Banco                           |
-|  - Gestão de Segredos (.env: SUPABASE_SERVICE_ROLE_KEY, OPENAI_API_KEY, etc)      |
-+-----------------------------------------------------------------------------------+
-                        |                                       |
-                        | Supabase Service Role Client          | External API Call
-                        v                                       v
-+-----------------------------------------------+     +-----------------------------+
-|              SUPABASE POSTGRESQL              |     |   INTEGRAÇÕES EXTERNAS      |
-|  Tables: site_settings, products, brands,     |     |  - OpenAI API (Try-On)      |
-|          orders, reviews, leads, etc.         |     |  - Lovable Email Service    |
-|  Storage Buckets: virtual-tryon               |     |  - WhatsApp Web Links       |
-+-----------------------------------------------+     +-----------------------------+
+[ Cliente Browser / Frontend ]
+          |
+          |  (1) Envia formulários / payloads sem valores financeiros
+          v
+[ Server Functions (@tanstack/react-start) ]
+          |
+          |  (2) Valida JWT do cliente (requireSupabaseAuth)
+          |  (3) Valida entrada via Zod Schemas
+          |  (4) Consulta preços autoritativos, estoque e variantes no DB
+          v
+[ Supabase Admin (Service Role) ]
+          |
+          |  (5) Grava pedidos com RLS bypassado e subtotal recalculado
+          v
+[ Banco PostgreSQL Remote (Supabase) ] (RLS Ativo, orders_public_insert REMOVIDA)
 ```
 
 ---
 
-## 2. Divisão Estrutural da Arquitetura
+## 2. Fronteira de Confiança e Modelo de Segurança
 
-### 2.1 Arquitetura ATUAL (Implementada e Verificada)
-- **Frontend / Cliente:** React 18, Vite, TanStack Router (file-based routing em `src/routes/`), Tailwind CSS e componentes Shadcn UI.
-- **Gerenciamento de Estado de Carrinho:** Hook `useCart` com sincronização via `useSyncExternalStore` e persistência local.
-- **Camada de Servidor (SSR):** Engine `@tanstack/react-start` com servidor HTTP configurado em [`src/server.ts`](file:///C:/Users/simon/OneDrive/Documentos/dona-dora-premium-style/src/server.ts).
-- **Server Functions Autenticadas:** Criadas via `createServerFn` protegidas pelo middleware `requireSupabaseAuth` e verificação `assertAdmin`.
-- **Checkout Autoritativo no Servidor:** A função `createOrder` ([`src/lib/site.functions.ts`](file:///C:/Users/simon/OneDrive/Documentos/dona-dora-premium-style/src/lib/site.functions.ts)) reconsulta o banco de dados via `supabaseAdmin` (Service Role), valida `active`, `available`, estoque, variantes de tamanho/cor, e calcula o subtotal no servidor antes da gravação.
-- **Proteção de Segredos:** Arquivo `.env` removido do controle de versão Git (`.gitignore`) e substituição por `.env.example`.
+### 2.1 Modelo de Confiança no Checkout
+- **Princípio:** O cliente frontend é considerado **não confiável** para a definição de valores financeiros, descontos ou confirmação de estoque.
+- **Implementação:**
+  - O cliente frontend envia exclusivamente os identificadores de produto e variantes selecionadas (`product_id`, `size`, `color`, `qty`).
+  - A server function `createOrder` ([`src/lib/site.functions.ts`](file:///C:/Users/simon/OneDrive/Documentos/dona-dora-premium-style/src/lib/site.functions.ts)) executa no servidor, reconsulta a tabela `products` via `supabaseAdmin` e efetua o cálculo autoritativo do subtotal.
 
-### 2.2 Arquitetura ALVO (Target Architecture)
-- **Separação Estrita de Clientes Supabase:**
-  - Cliente Público (`supabaseClient`): Apenas operações públicas permitidas por RLS.
-  - Cliente Privado (`supabaseAdmin`): Uso exclusivo em server functions no lado do servidor.
-- **Tipagem End-to-End Estrita:** Eliminação completa de `any` explícito nas camadas de comunicação entre servidor e cliente.
-- **Cobertura de Testes Automatizados:** Introdução de suíte de testes unitários e de integração para validar Server Functions e regras de negócio do checkout.
-- **Zero Confiança no Navegador:** Garantia de que nenhuma mutation crítica (pedidos, estoque, pagamentos) dependa de dados passados diretamente pelo cliente.
+### 2.2 Controle de Acesso e Autenticação
+- **Autenticação de Usuários:** Gerenciada pelo Supabase Auth.
+- **Proteção de Server Functions:** O middleware `requireSupabaseAuth` valida os tokens JWT em cada requisição de servidor.
+- **Vínculo Autoritativo:** O e-mail do comprador é obrigatoriamente associado ao e-mail extraído do token JWT autenticado (`context.claims.email`), impedindo falsificação de identidade de terceiros.
+- **Painel Administrativo:** Funções em `src/lib/admin.functions.ts` utilizam a função `assertAdmin` para validar a permissão de administrador no banco de dados antes de executar operações de leitura/escrita.
 
-### 2.3 Alterações de Segurança PENDENTES (Pending Security Changes)
-- **Proposta de Remediação RLS em `orders`:**  
-  `The direct public insert policy for orders remains a known security remediation proposal and has NOT been implemented or executed.`
-- **Execução Controlada:** A remoção da política `orders_public_insert` permanece documentada em [`DATABASE_SECURITY_REMEDIATION_PROPOSAL.md`](file:///C:/Users/simon/OneDrive/Documentos/dona-dora-premium-style/DATABASE_SECURITY_REMEDIATION_PROPOSAL.md) e aguarda confirmação do `project_ref` e autorização prévia. Nenhuma alteração foi executada no banco de dados.
+### 2.3 Fronteira de Segurança do Banco de Dados (Supabase / RLS)
+- **Tabela `public.orders`:** Possui Row Level Security (RLS) habilitado.
+- **Remoção da Policy Insegura (`orders_public_insert`):** **REMOVIDA E VERIFICADA NO BANCO REMOTO**. A política histórica que permitia que usuários `anon` ou `authenticated` inserissem dados diretamente na tabela `orders` sem passar pelo servidor foi desativada no Supabase remoto Cloud.
+- **Migração no Repositório:** A migração [`supabase/migrations/20260821234621_8a71a813-dcc7-4c7c-9081-7e0ec09519b0.sql`](file:///C:/Users/simon/OneDrive/Documentos/dona-dora-premium-style/supabase/migrations/20260821234621_8a71a813-dcc7-4c7c-9081-7e0ec09519b0.sql) já está integrada na história do repositório remoto (`origin/main` no commit `7cec064`).
+- **Escrita em `orders`:** A gravação de pedidos ocorre exclusivamente através da chave administrativa de servidor (`supabaseAdmin`), garantindo isolamento total contra ataques de injeção direta via API REST pública do Supabase.
 
 ---
 
-## 3. Limites de Implantação e Segredos
+## 3. Arquitetura de Componentes Full-Stack
 
-- **Build de Produção:** O comando `bun run build` gera duas distribuições distintas: `dist/client` (ativos estáticos) e `dist/server` (bundle Node.js/SSR).
-- **Segredos Protegidos (Somente Servidor):** `SUPABASE_SERVICE_ROLE_KEY`, `LOVABLE_API_KEY` e `OPENAI_API_KEY` são mantidos exclusivamente em variáveis de ambiente do servidor, sem exposição ao cliente web.
+### 3.1 Camada de Apresentação (Frontend)
+- **Framework:** React 18 com TanStack Router (File-based Routing).
+- **Estilização:** Vanilla CSS estendido (`src/styles.css`) + Tailwind CSS + Shadcn UI.
+- **Gerenciamento de Estado do Carrinho:** Zustand com persistência local em `localStorage` ([`src/hooks/use-cart.ts`](file:///C:/Users/simon/OneDrive/Documentos/dona-dora-premium-style/src/hooks/use-cart.ts)).
+
+### 3.2 Camada de Servidor (SSR & Server Functions)
+- **Framework:** TanStack Start.
+- **Funções de Servidor Divididas por Domínio:**
+  - `src/lib/site.functions.ts`: Vitrine pública e criação de pedidos (`createOrder`).
+  - `src/lib/account.functions.ts`: Perfil do cliente e histórico de pedidos (`listMyOrders`).
+  - `src/lib/admin.functions.ts`: Gestão administrativa, produtos, marcas e status de pedidos.
+  - `src/lib/dora.functions.ts`: Atendimento virtual e captura de leads.
+  - `src/lib/tryon.functions.ts`: Provador virtual (OpenAI).
+
+### 3.3 Camada de Dados e Integrações
+- **Banco de Dados Relacional:** PostgreSQL no Supabase Cloud.
+- **Armazenamento de Arquivos:** Supabase Storage (bucket `virtual-tryon` para uploads do provador virtual).
+- **Provedor de Inteligência Artificial:** OpenAI API (`gpt-image-1` / `images/edits`).

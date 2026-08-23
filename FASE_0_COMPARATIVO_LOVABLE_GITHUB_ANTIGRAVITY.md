@@ -1,9 +1,9 @@
 # Fase 0 — Comparativo: Lovable, GitHub e Antigravity
 
-> **Status:** Documentação de Alinhamento e Estado Técnico Verificado  
-> **Repositório:** `dona-dora-premium-style`  
-> **Ramo Atual:** `security/remediate-secrets`  
-> **HEAD:** `d1b902a`
+> **Status:** Documentação de Alinhamento e Estado Técnico Verificado
+> **Repositório:** `dona-dora-premium-style`
+> **Ramo Atual:** `docs/reconcile-security-state`
+> **Base Remote:** `origin/main` (`7cec064`)
 
 ---
 
@@ -25,14 +25,10 @@ Para garantir a integridade técnica, segurança e prevenção de regressões, e
 ## 2. Comparativo de Ambientes e Componentes
 
 ### 2.1 Repositório e Controle de Versão (Git / GitHub)
-- **Ramo Ativo Local:** `security/remediate-secrets` (HEAD: `d1b902a`).
-- **Ramos Remotos (`origin`):**
-  - `origin/main` (ramo principal de produção no GitHub);
-  - `origin/lovable-sync-1781795431` (ramo automático mantido pela integração Lovable).
-- **Histórico de Commits Recentes no Ramo de Segurança:**
-  - `d1b902a`: `chore: resolve targeted lint issues` (comentários em catch de storage e `let` -> `const` em tryon);
-  - `0cb4fc2`: `security: validate order pricing server-side` (recalculo server-side de preços no checkout e criação da proposta de banco);
-  - `1c97acf`: `security: stop tracking local environment files` (remoção do `.env` rastreado e inclusão no `.gitignore`).
+- **Ramo Principal Remote:** `origin/main` (HEAD: `7cec064`).
+- **Pull Request #1 (PR #1):** **MERGED** no GitHub (Merge commit: `ba0f8ea`).
+- **Remediação no Banco Remote:** Commit `7cec064` (`Dropped orders_public_insert`) com a migração `supabase/migrations/20260821234621_8a71a813-dcc7-4c7c-9081-7e0ec09519b0.sql` integrada diretamente na história remota.
+- **Ramo de Conciliação:** `docs/reconcile-security-state`.
 
 ### 2.2 Ambiente Local Antigravity (Windows OS + Bun 1.3.14 / Node)
 - **Sistema Operacional:** Windows.
@@ -43,7 +39,7 @@ Para garantir a integridade técnica, segurança e prevenção de regressões, e
   - **Integridade do Lockfile:** O arquivo `bun.lock` foi mantido **intacto e inalterado**. Nenhum `package-lock.json` ou lockfile não autorizado foi adicionado ao repositório Git.
 
 ### 2.3 Integração Lovable (Plataforma e Automações)
-- **Commits Históricos Lovable:** `009ee30`, `dea1c4b`, `10d3ce3`, `f671eea` (adição de templates de e-mail de autenticação, webhooks e preview em `src/routes/lovable/`).
+- **Commits Históricos Lovable:** `009ee30`, `dea1c4b`, `10d3ce3`, `f671eea`, `9ceec1b`, `7cec064` (adição de templates de e-mail de autenticação, webhooks, segurança da fila PGMQ e remoção da política `orders_public_insert`).
 - **Ramo de Sincronização:** `origin/lovable-sync-1781795431`.
 - **Risco de Dessincronização:** Alterações diretas realizadas na interface web do Lovable podem sobrescrever correções de segurança aplicadas no repositório Git local se mescladas sem revisão prévia.
 
@@ -60,27 +56,25 @@ Para garantir a integridade técnica, segurança e prevenção de regressões, e
 
 | Componente / Funcionalidade | Classificação de Estado | Evidência / Observação |
 | :--- | :--- | :--- |
-| **Integridade da Árvore Git Local** | **VERIFIED** | Working tree limpa, 0 arquivos modificados não autorizados. |
+| **Integridade da Árvore Git Local** | **VERIFIED** | Baseado em `origin/main` no commit `7cec064`. |
 | **Checagem de Tipos TypeScript** | **VERIFIED** | `bun x tsc --noEmit` retorna 0 erros. |
 | **Build de Produção (Client + SSR)** | **VERIFIED** | `bun run build` executa e gera artefatos em `dist/client` e `dist/server`. |
 | **Proteção de Segredos (`.env`)** | **VERIFIED** | `.env` removido do rastreamento (commit `1c97acf`), `.gitignore` configurado. |
 | **Checkout Seguro (`createOrder`)** | **VERIFIED** | Preço, estoque e disponibilidade validados no servidor (commit `0cb4fc2`). |
+| **Remoção da Policy `orders_public_insert`** | **VERIFIED (REMOTAMENTE & GIT)** | Removida do banco remoto Supabase e registrada na migração `20260821234621_8a71a813-dcc7-4c7c-9081-7e0ec09519b0.sql` em `origin/main` (`7cec064`). |
 | **Remediação de Lint Alvo** | **VERIFIED** | Erros `no-empty` e `prefer-const` corrigidos no commit `d1b902a`. |
 | **Suíte de Testes Automatizados** | **NOT AVAILABLE** | Não existe script de teste configurado no `package.json`. |
 | **Linter Completo (ESLint / Prettier)** | **TECHNICAL DEBT** | Não passa por conta de débito diferido (93 `any`, 1630 Prettier, 6 Fast Refresh). |
 | **Histórico Lovable (`email-templates`)** | **HISTORICAL/KNOWN** | Arquivos em `src/routes/lovable/` e `src/lib/email-templates/` integrados via `gpt-engineer-app[bot]`. |
 | **Recuperação de `node_modules` via npm** | **HISTORICAL/KNOWN** | Realizado localmente para contornar limitações do Bun 1.3.14/Windows com `workerd`/`esbuild`. |
-| **Sincronização Ativa com Lovable Web** | **NOT VERIFIED** | Não há garantia de que o ambiente web do Lovable possua os commits locais sem um push/merge explícito. |
-| **Credenciais / Ref do Supabase Produção** | **NOT VERIFIED** | O `project_ref` do banco de dados remoto precisa de confirmação antes de aplicabilidade de migrations. |
-| **Remoção da Policy `orders_public_insert`** | **PENDING / NOT IMPLEMENTED** | The direct public insert policy for orders remains a known security remediation proposal and has NOT been implemented or executed. |
-| **Publicação / Deploy em Produção** | **PENDING** | Nenhuma ação de deploy ou merge foi executada nesta fase. |
+| **Publicação / Deploy em Produção** | **PENDING** | Nenhuma ação de deploy foi executada nesta fase. |
 
 ---
 
 ## 4. Riscos de Sincronização e Recomendações
 
-1. **Risco de Sobrescrita pelo Lovable:** Se edições forem feitas na plataforma Lovable enquanto o ramo local `security/remediate-secrets` estiver com correções de segurança não sincronizadas, um merge automático poderá reintroduzir cálculo de preço no cliente (`Cart.tsx`).
+1. **Risco de Sobrescrita pelo Lovable:** Se edições forem feitas na plataforma Lovable enquanto o código estiver com correções de segurança não sincronizadas, um merge automático poderá reintroduzir cálculo de preço no cliente (`Cart.tsx`).
 2. **Recomendação de Fluxo de Trabalho:**
-   - Manter as alterações de segurança isoladas no ramo `security/remediate-secrets`.
-   - Realizar Code Review rigoroso antes de mesclar na `main` ou sincronizar com o ramo do Lovable.
-   - Não publicar na plataforma Lovable sem verificar se a validação server-side de pedidos está intacta.
+   - Manter as alterações de segurança e migrações documentadas no repositório.
+   - Realizar Code Review rigoroso antes de sincronizar com a plataforma Lovable.
+   - Garantir que a remoção da política `orders_public_insert` permaneça ativa em todas as instâncias do banco de dados Supabase.

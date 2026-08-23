@@ -1,19 +1,19 @@
 # Fase 1 — Status da Remediação de Segurança
 
-> **Status:** Documentação Oficial de Segurança e Débito Técnico  
-> **Repositório:** `dona-dora-premium-style`  
-> **Ramo:** `security/remediate-secrets`  
-> **HEAD:** `d1b902a`
+> **Status:** Documentação Oficial de Segurança e Débito Técnico
+> **Repositório:** `dona-dora-premium-style`
+> **Ramo:** `docs/reconcile-security-state`
+> **Base Remote:** `origin/main` (`7cec064`)
 
 ---
 
 ## 1. Resumo do Status de Segurança
 
-A Fase 1 da auditoria e remediação de segurança concentrou-se na **proteção de credenciais de ambiente** e no **fortalecimento da fronteira de confiança do checkout** (eliminação da manipulação de preços no lado do cliente).
+A Fase 1 da auditoria e remediação de segurança concentrou-se na **proteção de credenciais de ambiente**, no **fortalecimento da fronteira de confiança do checkout** (eliminação da manipulação de preços no lado do cliente) e na **eliminação da política de inserção direta no banco de dados remoto**.
 
 ---
 
-## 2. Remediações Concluídas (Commits Verificados)
+## 2. Remediações Concluídas (Commits e Banco de Dados)
 
 ### 2.1 Commit `1c97acf` — Proteção de Arquivos de Ambiente
 - **Descrição:** `security: stop tracking local environment files`
@@ -39,7 +39,13 @@ A Fase 1 da auditoria e remediação de segurança concentrou-se na **proteção
   3. **Documentação de Remediação de Banco:** Criação do documento [`DATABASE_SECURITY_REMEDIATION_PROPOSAL.md`](file:///C:/Users/simon/OneDrive/Documentos/dona-dora-premium-style/DATABASE_SECURITY_REMEDIATION_PROPOSAL.md).
 - **Estado Atual:** **CONCLUÍDO E VERIFICADO**.
 
-### 2.3 Commit `d1b902a` — Resolução de Alertas de Lint Direcionados
+### 2.3 Remediação de Banco de Dados — Remoção da Policy `orders_public_insert`
+- **Descrição:** Eliminação da política pública RLS de inserção em `public.orders` no banco de dados remoto Supabase.
+- **Estado Remoto:** A política `orders_public_insert` foi **REMOVIDA E VERIFICADA NO BANCO REMOTO**.
+- **Estado do Repositório:** A migração [`supabase/migrations/20260821234621_8a71a813-dcc7-4c7c-9081-7e0ec09519b0.sql`](file:///C:/Users/simon/OneDrive/Documentos/dona-dora-premium-style/supabase/migrations/20260821234621_8a71a813-dcc7-4c7c-9081-7e0ec09519b0.sql) já está integrada na história remota (`origin/main` no commit `7cec064`).
+- **Documentação de Referência:** [`SECURITY.md`](file:///C:/Users/simon/OneDrive/Documentos/dona-dora-premium-style/SECURITY.md).
+
+### 2.4 Commit `d1b902a` — Resolução de Alertas de Lint Direcionados
 - **Descrição:** `chore: resolve targeted lint issues`
 - **Ações Realizadas:**
   1. Adição de comentários explicativos nos blocos `catch` vazios do hook de carrinho ([`src/hooks/use-cart.ts`](file:///C:/Users/simon/OneDrive/Documentos/dona-dora-premium-style/src/hooks/use-cart.ts)), eliminando os 2 erros `no-empty`;
@@ -58,22 +64,11 @@ A Fase 1 da auditoria e remediação de segurança concentrou-se na **proteção
 | **Validação de Estoque** | **ATIVO** | `createOrder` valida `qty <= stock`. |
 | **Validação de Variantes (Tamanho/Cor)** | **ATIVO** | `createOrder` verifica inclusão em `sizes` e `colors`. |
 | **Vínculo de E-mail do Cliente** | **ATIVO** | `customer_email` é obtido do token JWT autenticado (`context.claims.email`). |
+| **Remoção de Insert Direto RLS (`orders`)** | **ATIVO (REMOTAMENTE & GIT)** | Policy `orders_public_insert` removida do Supabase remoto e registrada na migração em `origin/main` (`7cec064`). |
 
 ---
 
-## 4. Remediação de Segurança Pendente (Banco de Dados)
-
-### 4.1 Proposta `orders_public_insert`
-- **Documento de Referência:** [`DATABASE_SECURITY_REMEDIATION_PROPOSAL.md`](file:///C:/Users/simon/OneDrive/Documentos/dona-dora-premium-style/DATABASE_SECURITY_REMEDIATION_PROPOSAL.md)
-- **Descrição do Problema:** A política RLS `orders_public_insert` existente no banco Supabase ainda permite a inserção direta de pedidos por clientes anônimos ou autenticados diretamente via API do cliente (ignorando a função server-side `createOrder`).
-- **Declaração Oficial de Status:**  
-  `The direct public insert policy for orders remains a known security remediation proposal and has NOT been implemented or executed.`
-- **Status do Item:** **NÃO IMPLEMENTADO (PENDENTE DE AUTORIZAÇÃO)**.
-- **Justificativa:** A alteração requer validação prévia do `project_ref` oficial de produção e execução controlada via Supabase CLI com backup prévio. **NENHUM SQL OU MIGRATION FOI EXECUTADO**.
-
----
-
-## 5. Classificação do Débito Técnico Diferido
+## 4. Classificação do Débito Técnico Diferido
 
 O linter completo **NÃO PASSA** devido ao débito técnico que foi explicitamente **diferido** para fases futuras:
 
