@@ -1,10 +1,10 @@
 # DONA DORA BOUTIQUE PREMIUM — FASE 2: QUALITY ENGINEERING PLAN
 
-**Repositório:** `dona-dora-premium-style`  
-**Proprietária:** 44CODE — Simone  
-**Status Baseline:** Safe Baseline Protected (`main = db21148`)  
-**Branch Atual:** `quality/p1-order-tests`  
-**Status P1.1:** IMPLEMENTADO E AUDITADO — PRONTO PARA COMMIT LOCAL  
+**Repositório:** `dona-dora-premium-style`
+**Proprietária:** 44CODE — Simone
+**Status Baseline:** Main Branch Synchronized (`main = 5775e34`)
+**Branch Atual:** `main`
+**Status P1.1:** VERIFIED & INCORPORATED INTO MAIN (PR #3 Merged)
 
 ---
 
@@ -39,8 +39,8 @@ Nesta etapa, estabelecemos a fundação de testes unitários automatizados no ec
 | **INV-09** | Seleção de cor indisponível no produto é rejeitada | Direto (`processOrderItems`) | **STRONG** | PASS |
 | **INV-10** | Subtotal de item único é calculado de forma exata e arredondada | Direto (`processOrderItems`) | **STRONG** | PASS |
 | **INV-11** | Subtotal de múltiplos itens com/sem promoção é calculado corretamente | Direto (`processOrderItems`) | **STRONG** | PASS |
-| **INV-12** | Criação de pedidos não autenticados é rejeitada no limite de autenticação | Direto (Middleware / Claims) | **STRONG** | PASS |
-| **INV-13** | E-mail do comprador vinculado estritamente às claims JWT autenticadas | Direto (`orderSchema` + Claims) | **STRONG** | PASS |
+| **INV-12** | Criação de pedidos não autenticados é rejeitada no limite de autenticação | Direto (Middleware / Claims) | **WEAK** | PASS |
+| **INV-13** | E-mail do comprador vinculado estritamente às claims JWT autenticadas | Direto (`orderSchema` + Claims) | **ACCEPTABLE** | PASS |
 | **INV-14** | Subtotais e preços enviados no payload pelo cliente são descartados e ignorados | Direto (`orderSchema` + `processOrderItems`) | **STRONG** | PASS |
 
 ---
@@ -49,21 +49,18 @@ Nesta etapa, estabelecemos a fundação de testes unitários automatizados no ec
 
 - **Vitest Suite:** 14/14 testes aprovados (`✓ 14 passed`).
 - **TypeScript Compiler (`bun x tsc --noEmit`):** 0 erros.
-- **Production Build (`bun run build`):** Sucesso (`✓ built in 20.48s`, presets `.output/server` e `.output/public`).
+- **Production Build (`bun run build`):** Sucesso (`✓ built in 12.20s`, presets `.output/server` e `.output/public`).
 - **Verificação de Diff (`git diff --check`):** Clean (sem trailing whitespace).
 - **ESLint nos arquivos P1.1:** Clean (zero erros nos testes criados).
 - **Canonical Lockfile (`bun.lock`):** Sincronizado e reproduzível.
 
 ---
 
-## 4. PRÓXIMAS FASES (PLANEJADAS — AINDA NÃO INICIADAS)
+## 4. PRÓXIMAS FASES DO ROADMAP DA PLATAFORMA
 
-- **P1.2 — Invariantes Admin e Gestão de Sessão:** FUTURO (Pendente).
-- **P1.3 — Invariantes de IA e Provador Virtual / Dora Assistant:** FUTURO (Pendente).
-- **P1.4 — Invariantes de Checkout e Carrinho:** FUTURO (Pendente).
-- **P1.5 — Invariantes de Resiliência de Rede e Supabase:** FUTURO (Pendente).
+Consulte o documento oficial [`ROADMAP_DONA_DORA_PLATFORM.md`](file:///C:/Users/simon/OneDrive/Documentos/dona-dora-premium-style/ROADMAP_DONA_DORA_PLATFORM.md) para a hierarquia completa de fases da plataforma (P1.2 a P12).
 
----
-
-> [!NOTE]
-> Nenhum commit ou push foi realizado nesta etapa. As alterações permanecem locais no branch `quality/p1-order-tests` aguardando aprovação explícita para commit.
+- **P1.2 — Invariantes de Autenticação / Autorização / Identidade:** `PLANNED`
+- **P1.3 — CI Quality Gate (GitHub Actions):** `PLANNED`
+- **P1.4 — Type-Safety / API Modernization:** `PLANNED`
+- **P1.5 — Controlled Lint / Formatting Debt:** `TECHNICAL DEBT` / `PLANNED`
