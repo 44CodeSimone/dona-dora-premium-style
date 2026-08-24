@@ -1,4 +1,4 @@
-﻿import { createFileRoute, useNavigate, Link } from "@tanstack/react-router";
+import { createFileRoute, useNavigate, Link } from "@tanstack/react-router";
 import { useEffect, useState } from "react";
 import { useServerFn } from "@tanstack/react-start";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
@@ -34,7 +34,17 @@ import {
   TableCell,
 } from "@/components/ui/table";
 import { Badge } from "@/components/ui/badge";
-import { LogOut, Plus, Trash2, Upload, ExternalLink, Eye } from "lucide-react";
+import { LogOut, Plus, Trash2, Upload, ExternalLink, Eye, RotateCcw } from "lucide-react";
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from "@/components/ui/alert-dialog";
 import {
   checkIsAdmin,
   updateSiteSettings,
@@ -49,6 +59,9 @@ import {
   deleteBrand,
   listOrders,
   updateOrderStatus,
+  trashOrder,
+  restoreOrder,
+  deleteOrderPermanently,
   getAdminStats,
   getAdminSiteSettings,
   listReviewsAdmin,
@@ -1043,20 +1056,29 @@ function OrderDetailDialog({
 }
 
 // ── OrderTable ────────────────────────────────────────────────────────────────
-// Renders a filtered list of orders. Reusable across all status tabs.
+// Renders a list of orders. In trash mode the status column shows the previous
+// operational status (read-only) and actions become restore / permanent-delete.
 function OrderTable({
   orders,
+  trashMode = false,
   onView,
   onStatusChange,
+  onTrash,
+  onRestore,
+  onDeletePermanently,
 }: {
   orders: any[];
+  trashMode?: boolean;
   onView: (order: any) => void;
   onStatusChange: (id: string, status: OrderStatus) => void;
+  onTrash?: (order: any) => void;
+  onRestore?: (order: any) => void;
+  onDeletePermanently?: (order: any) => void;
 }) {
   if (orders.length === 0) {
     return (
       <div className="py-12 text-center text-sm text-muted-foreground">
-        Nenhum pedido neste agrupamento.
+        {trashMode ? "Nenhum pedido na lixeira." : "Nenhum pedido neste agrupamento."}
       </div>
     );
   }
@@ -1071,7 +1093,7 @@ function OrderTable({
             <TableHead>WhatsApp</TableHead>
             <TableHead>Itens</TableHead>
             <TableHead>Total</TableHead>
-            <TableHead>Status</TableHead>
+            <TableHead>{trashMode ? "Status anterior" : "Status"}</TableHead>
             <TableHead></TableHead>
           </TableRow>
         </TableHeader>
@@ -1090,24 +1112,69 @@ function OrderTable({
               </TableCell>
               <TableCell>R$ {Number(o.subtotal ?? 0).toFixed(2)}</TableCell>
               <TableCell>
-                <Select
-                  value={o.status}
-                  onValueChange={(v) => onStatusChange(o.id, v as OrderStatus)}
-                >
-                  <SelectTrigger className="h-8 w-[170px]">
-                    <SelectValue />
-                  </SelectTrigger>
-                  <SelectContent>
-                    {ORDER_STATUSES.map((s) => (
-                      <SelectItem key={s.v} value={s.v}>{s.l}</SelectItem>
-                    ))}
-                  </SelectContent>
-                </Select>
+                {trashMode ? (
+                  <Badge variant="secondary">
+                    {ORDER_STATUSES.find((s) => s.v === o.previous_status)?.l ??
+                      o.previous_status ??
+                      "—"}
+                  </Badge>
+                ) : (
+                  <Select
+                    value={o.status}
+                    onValueChange={(v) => onStatusChange(o.id, v as OrderStatus)}
+                  >
+                    <SelectTrigger className="h-8 w-[170px]">
+                      <SelectValue />
+                    </SelectTrigger>
+                    <SelectContent>
+                      {ORDER_STATUSES.map((s) => (
+                        <SelectItem key={s.v} value={s.v}>{s.l}</SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                )}
               </TableCell>
               <TableCell className="text-right">
-                <Button size="sm" variant="ghost" onClick={() => onView(o)}>
-                  <Eye className="size-4" />
-                </Button>
+                <div className="inline-flex items-center gap-1">
+                  <Button
+                    size="sm"
+                    variant="ghost"
+                    onClick={() => onView(o)}
+                    title="Visualizar pedido"
+                  >
+                    <Eye className="size-4" />
+                  </Button>
+                  {trashMode ? (
+                    <>
+                      <Button
+                        size="sm"
+                        variant="ghost"
+                        onClick={() => onRestore?.(o)}
+                        title="Restaurar pedido"
+                      >
+                        <RotateCcw className="size-4" />
+                      </Button>
+                      <Button
+                        size="sm"
+                        variant="ghost"
+                        onClick={() => onDeletePermanently?.(o)}
+                        title="Excluir permanentemente"
+                        className="text-destructive hover:text-destructive"
+                      >
+                        <Trash2 className="size-4" />
+                      </Button>
+                    </>
+                  ) : (
+                    <Button
+                      size="sm"
+                      variant="ghost"
+                      onClick={() => onTrash?.(o)}
+                      title="Mover para a lixeira"
+                    >
+                      <Trash2 className="size-4" />
+                    </Button>
+                  )}
+                </div>
               </TableCell>
             </TableRow>
           ))}
@@ -1118,21 +1185,41 @@ function OrderTable({
 }
 
 // ── OrdersTab ─────────────────────────────────────────────────────────────────
-// Organizes orders by status using tabs.
-// All filtering is done client-side over the cached React Query data —
-// no extra network requests when switching tabs.
+// Manages operational orders and the trash bin in a single view.
+// The active/trash split is client-side over the cached React Query data;
+// no extra network requests are issued when toggling between views.
 function OrdersTab() {
   const qc = useQueryClient();
-  const list   = useServerFn(listOrders);
-  const update = useServerFn(updateOrderStatus);
+  const list          = useServerFn(listOrders);
+  const update        = useServerFn(updateOrderStatus);
+  const trashFn       = useServerFn(trashOrder);
+  const restoreFn     = useServerFn(restoreOrder);
+  const deleteFn      = useServerFn(deleteOrderPermanently);
 
   const { data: orders = [] } = useQuery({
     queryKey: ["orders"],
     queryFn: () => list(),
   });
 
-  const [viewing, setViewing] = useState<any | null>(null);
+  // view: which panel is visible — operational orders or the trash bin.
+  const [view, setView]               = useState<"active" | "trash">("active");
+  const [viewing, setViewing]         = useState<any | null>(null);
+  const [confirmTrash, setConfirmTrash]   = useState<any | null>(null);
+  const [confirmDelete, setConfirmDelete] = useState<any | null>(null);
 
+  // ── Derived lists ──────────────────────────────────────────────────────────
+  const all           = orders as any[];
+  const activeOrders  = all.filter((o) => o.status !== "trash");
+  const trashedOrders = all.filter((o) => o.status === "trash");
+
+  function countByStatus(status: string): number {
+    return activeOrders.filter((o) => o.status === status).length;
+  }
+  function filterByStatus(status: string): any[] {
+    return activeOrders.filter((o) => o.status === status);
+  }
+
+  // ── Mutations ──────────────────────────────────────────────────────────────
   const mut = useMutation({
     mutationFn: (p: { id: string; status: OrderStatus }) => update({ data: p }),
     onSuccess: () => {
@@ -1142,55 +1229,164 @@ function OrdersTab() {
     onError: (e: any) => toast.error(e?.message ?? "Erro"),
   });
 
-  // Compute per-status counts from in-memory data — no extra queries.
-  function countByStatus(status: string): number {
-    return (orders as any[]).filter((o) => o.status === status).length;
-  }
+  const trashMut = useMutation({
+    mutationFn: (id: string) => trashFn({ data: { id } }),
+    onSuccess: () => {
+      toast.success("Pedido movido para a lixeira.");
+      setConfirmTrash(null);
+      qc.invalidateQueries({ queryKey: ["orders"] });
+    },
+    onError: (e: any) => toast.error(e?.message ?? "Erro"),
+  });
 
-  function filterByStatus(status: string): any[] {
-    return (orders as any[]).filter((o) => o.status === status);
-  }
+  const restoreMut = useMutation({
+    mutationFn: (id: string) => restoreFn({ data: { id } }),
+    onSuccess: () => {
+      toast.success("Pedido restaurado.");
+      qc.invalidateQueries({ queryKey: ["orders"] });
+    },
+    onError: (e: any) => toast.error(e?.message ?? "Erro"),
+  });
 
-  const total = (orders as any[]).length;
+  const deleteMut = useMutation({
+    mutationFn: (id: string) => deleteFn({ data: { id } }),
+    onSuccess: () => {
+      toast.success("Pedido excluído permanentemente.");
+      setConfirmDelete(null);
+      setViewing(null);
+      qc.invalidateQueries({ queryKey: ["orders"] });
+    },
+    onError: (e: any) => toast.error(e?.message ?? "Erro"),
+  });
 
   return (
     <div className="space-y-4">
-      <h2 className="font-display text-2xl">Pedidos ({total})</h2>
+      {/* Header: title + view toggle */}
+      <div className="flex justify-between items-center flex-wrap gap-3">
+        <h2 className="font-display text-2xl">
+          Pedidos ({activeOrders.length})
+        </h2>
+        <div className="inline-flex items-center gap-2">
+          <Button
+            id="orders-view-active"
+            size="sm"
+            variant={view === "active" ? "default" : "outline"}
+            onClick={() => setView("active")}
+          >
+            Operacional
+          </Button>
+          <Button
+            id="orders-view-trash"
+            size="sm"
+            variant={view === "trash" ? "default" : "outline"}
+            onClick={() => setView("trash")}
+          >
+            <Trash2 className="size-4 mr-1" />
+            Lixeira ({trashedOrders.length})
+          </Button>
+        </div>
+      </div>
 
-      <Tabs defaultValue="todos">
-        <TabsList className="flex flex-wrap h-auto gap-1">
-          <TabsTrigger value="todos">
-            Todos ({total})
-          </TabsTrigger>
-          {ORDER_STATUSES.map((s) => (
-            <TabsTrigger key={s.v} value={s.v}>
-              {s.l} ({countByStatus(s.v)})
+      {view === "trash" ? (
+        // ── Trash view ───────────────────────────────────────────────────────
+        <OrderTable
+          orders={trashedOrders}
+          trashMode
+          onView={setViewing}
+          onStatusChange={() => {}}
+          onRestore={(o) => restoreMut.mutate(o.id)}
+          onDeletePermanently={(o) => setConfirmDelete(o)}
+        />
+      ) : (
+        // ── Operational view — tabs by status ─────────────────────────────
+        <Tabs defaultValue="todos">
+          <TabsList className="flex flex-wrap h-auto gap-1">
+            <TabsTrigger value="todos">
+              Todos ({activeOrders.length})
             </TabsTrigger>
-          ))}
-        </TabsList>
+            {ORDER_STATUSES.map((s) => (
+              <TabsTrigger key={s.v} value={s.v}>
+                {s.l} ({countByStatus(s.v)})
+              </TabsTrigger>
+            ))}
+          </TabsList>
 
-        {/* "Todos" shows the full list */}
-        <TabsContent value="todos" className="mt-4">
-          <OrderTable
-            orders={orders as any[]}
-            onView={setViewing}
-            onStatusChange={(id, status) => mut.mutate({ id, status })}
-          />
-        </TabsContent>
-
-        {/* One tab per status — each renders only its own orders */}
-        {ORDER_STATUSES.map((s) => (
-          <TabsContent key={s.v} value={s.v} className="mt-4">
+          <TabsContent value="todos" className="mt-4">
             <OrderTable
-              orders={filterByStatus(s.v)}
+              orders={activeOrders}
               onView={setViewing}
               onStatusChange={(id, status) => mut.mutate({ id, status })}
+              onTrash={(o) => setConfirmTrash(o)}
             />
           </TabsContent>
-        ))}
-      </Tabs>
+
+          {ORDER_STATUSES.map((s) => (
+            <TabsContent key={s.v} value={s.v} className="mt-4">
+              <OrderTable
+                orders={filterByStatus(s.v)}
+                onView={setViewing}
+                onStatusChange={(id, status) => mut.mutate({ id, status })}
+                onTrash={(o) => setConfirmTrash(o)}
+              />
+            </TabsContent>
+          ))}
+        </Tabs>
+      )}
 
       <OrderDetailDialog order={viewing} onClose={() => setViewing(null)} />
+
+      {/* Confirmation: move to trash */}
+      <AlertDialog
+        open={!!confirmTrash}
+        onOpenChange={(open) => { if (!open) setConfirmTrash(null); }}
+      >
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>Mover para a lixeira?</AlertDialogTitle>
+            <AlertDialogDescription>
+              O pedido de{" "}
+              <strong>{confirmTrash?.customer_name}</strong> será movido para a
+              lixeira. Você poderá restaurá-lo depois.
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel>Cancelar</AlertDialogCancel>
+            <AlertDialogAction
+              onClick={() => confirmTrash && trashMut.mutate(confirmTrash.id)}
+              disabled={trashMut.isPending}
+            >
+              Mover para a lixeira
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
+
+      {/* Confirmation: permanent delete */}
+      <AlertDialog
+        open={!!confirmDelete}
+        onOpenChange={(open) => { if (!open) setConfirmDelete(null); }}
+      >
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>Excluir permanentemente?</AlertDialogTitle>
+            <AlertDialogDescription>
+              O pedido de{" "}
+              <strong>{confirmDelete?.customer_name}</strong> será excluído
+              permanentemente e não poderá ser recuperado.
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel>Cancelar</AlertDialogCancel>
+            <AlertDialogAction
+              onClick={() => confirmDelete && deleteMut.mutate(confirmDelete.id)}
+              disabled={deleteMut.isPending}
+              className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
+            >
+              Excluir permanentemente
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
     </div>
   );
 }

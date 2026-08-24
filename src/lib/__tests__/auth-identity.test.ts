@@ -38,6 +38,7 @@ function query(result: unknown) {
     insert: vi.fn(() => builder),
     limit: vi.fn(() => builder),
     maybeSingle: vi.fn(async () => result),
+    neq: vi.fn(() => builder),
     order: vi.fn(() => builder),
     select: vi.fn(() => builder),
     single: vi.fn(async () => result),
