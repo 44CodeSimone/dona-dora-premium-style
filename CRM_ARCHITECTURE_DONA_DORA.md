@@ -1,9 +1,9 @@
 # ARQUITETURA DO DOMÍNIO CRM — DONA DORA BOUTIQUE PREMIUM
 
-> **Status:** Especificação de Arquitetura de CRM Integrado  
-> **Repositório:** `dona-dora-premium-style`  
-> **Proprietária:** 44CODE — Simone  
-> **Escopo:** Gestão do Ciclo de Vida do Cliente, Unificação de Identidades e Inteligência de Vendas  
+> **Status:** Especificação de Arquitetura de CRM Integrado
+> **Repositório:** `dona-dora-premium-style`
+> **Proprietária:** 44CODE — Simone
+> **Escopo:** Gestão do Ciclo de Vida do Cliente, Unificação de Identidades e Inteligência de Vendas
 
 ---
 

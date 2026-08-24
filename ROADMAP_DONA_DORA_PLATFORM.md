@@ -1,9 +1,9 @@
 # ROADMAP OFICIAL — DONA DORA BOUTIQUE PREMIUM PLATFORM
 
-> **Status:** Fonte Única de Verdade do Roadmap da Plataforma Comercial  
-> **Repositório:** `dona-dora-premium-style`  
-> **Proprietária:** 44CODE — Simone  
-> **Branch Base:** `main` (`5775e34`)  
+> **Status:** Fonte Única de Verdade do Roadmap da Plataforma Comercial
+> **Repositório:** `dona-dora-premium-style`
+> **Proprietária:** 44CODE — Simone
+> **Branch Base:** `main` (`5775e34`)
 
 ---
 
