@@ -52,20 +52,22 @@ export const upsertMyProfile = createServerFn({ method: "POST" })
   });
 
 // ---- Orders (match by user's email) ----
+export async function getOrdersForAuthenticatedCustomer(context: { claims?: { email?: string } }) {
+  const email = context.claims?.email;
+  if (!email) return [];
+  const { data, error } = await supabaseAdmin
+    .from("orders")
+    .select("id,created_at,status,subtotal,items,customer_name,customer_whatsapp")
+    .eq("customer_email", email)
+    .order("created_at", { ascending: false })
+    .limit(100);
+  if (error) throw new Error(error.message);
+  return data ?? [];
+}
+
 export const getMyOrders = createServerFn({ method: "GET" })
   .middleware([requireSupabaseAuth])
-  .handler(async ({ context }) => {
-    const email = context.claims?.email as string | undefined;
-    if (!email) return [];
-    const { data, error } = await supabaseAdmin
-      .from("orders")
-      .select("id,created_at,status,subtotal,items,customer_name,customer_whatsapp")
-      .eq("customer_email", email)
-      .order("created_at", { ascending: false })
-      .limit(100);
-    if (error) throw new Error(error.message);
-    return data ?? [];
-  });
+  .handler(async ({ context }) => getOrdersForAuthenticatedCustomer(context));
 
 // ---- Wishlist ----
 export const getMyWishlist = createServerFn({ method: "GET" })
