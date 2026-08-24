@@ -186,34 +186,39 @@ export function processOrderItems(
   return { pricedItems, subtotal };
 }
 
+export async function createOrderForAuthenticatedCustomer(
+  data: z.infer<typeof orderSchema>,
+  context: { claims?: { email?: string } },
+) {
+  const productIds = [...new Set(data.items.map((item) => item.product_id))];
+  const { data: products, error: productsError } = await supabaseAdmin
+    .from("products")
+    .select("id,name,price,promo,promo_price,available,stock,sizes,colors")
+    .in("id", productIds)
+    .eq("active", true);
+
+  if (productsError) throw new Error(productsError.message);
+
+  const { pricedItems, subtotal } = processOrderItems(data.items, products ?? []);
+
+  const { data: row, error } = await supabaseAdmin
+    .from("orders")
+    .insert({
+      customer_name: data.customer_name,
+      customer_whatsapp: data.customer_whatsapp,
+      customer_email: context.claims?.email ?? null,
+      notes: data.notes ?? null,
+      items: pricedItems,
+      subtotal,
+      status: "novo",
+    })
+    .select("id")
+    .single();
+  if (error) throw new Error(error.message);
+  return { id: row.id };
+}
+
 export const createOrder = createServerFn({ method: "POST" })
   .middleware([requireSupabaseAuth])
   .inputValidator((input) => orderSchema.parse(input))
-  .handler(async ({ data, context }) => {
-    const productIds = [...new Set(data.items.map((item) => item.product_id))];
-    const { data: products, error: productsError } = await supabaseAdmin
-      .from("products")
-      .select("id,name,price,promo,promo_price,available,stock,sizes,colors")
-      .in("id", productIds)
-      .eq("active", true);
-
-    if (productsError) throw new Error(productsError.message);
-
-    const { pricedItems, subtotal } = processOrderItems(data.items, products ?? []);
-
-    const { data: row, error } = await supabaseAdmin
-      .from("orders")
-      .insert({
-        customer_name: data.customer_name,
-        customer_whatsapp: data.customer_whatsapp,
-        customer_email: context.claims?.email ?? null,
-        notes: data.notes ?? null,
-        items: pricedItems,
-        subtotal,
-        status: "novo",
-      })
-      .select("id")
-      .single();
-    if (error) throw new Error(error.message);
-    return { id: row.id };
-  });
+  .handler(async ({ data, context }) => createOrderForAuthenticatedCustomer(data, context));

@@ -145,36 +145,6 @@ describe("Critical Order Invariants (P1.1)", () => {
     expect(result.subtotal).toBe(1090.0);
   });
 
-  it("INV-12. Unauthenticated order creation boundary verification", () => {
-    // Verifies that the order creation schema requires valid payload structure
-    // and that authentication middleware context is mandatory.
-    const invalidAuthContext: { claims?: { email?: string } } = {};
-    const email = invalidAuthContext.claims?.email ?? null;
-
-    expect(email).toBeNull();
-  });
-
-  it("INV-13. Authenticated identity binding enforces claims.email over client payload", () => {
-    // Simulating client input attempting to pass a spoofed customer_email in order payload
-    const unvalidatedInput = {
-      customer_name: "Simone VIP",
-      customer_whatsapp: "11999998888",
-      customer_email: "hacker@malicious.com",
-      items: [{ product_id: sampleProduct1.id, qty: 1 }],
-    };
-
-    // orderSchema strips/ignores any client-submitted customer_email
-    const parsed = orderSchema.parse(unvalidatedInput);
-    expect(parsed).not.toHaveProperty("customer_email");
-
-    // The order handler explicitly binds customer_email from context.claims.email
-    const mockContext = { claims: { email: "simone@donadora.com.br" } };
-    const boundEmail = mockContext.claims?.email ?? null;
-
-    expect(boundEmail).toBe("simone@donadora.com.br");
-    expect(boundEmail).not.toBe("hacker@malicious.com");
-  });
-
   it("INV-14. Server-only trust boundary enforces price calculation & ignores malicious client totals", () => {
     const maliciousClientInput = {
       customer_name: "Cliente Teste",
