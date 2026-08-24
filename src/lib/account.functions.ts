@@ -35,7 +35,7 @@ const profileInput = z.object({
 
 export const upsertMyProfile = createServerFn({ method: "POST" })
   .middleware([requireSupabaseAuth])
-  .inputValidator((input) => profileInput.parse(input))
+  .validator((input) => profileInput.parse(input))
   .handler(async ({ data, context }) => {
     const payload = {
       user_id: context.userId,
@@ -91,7 +91,7 @@ export const getMyWishlist = createServerFn({ method: "GET" })
 
 export const addToWishlist = createServerFn({ method: "POST" })
   .middleware([requireSupabaseAuth])
-  .inputValidator((input: { product_id: string }) =>
+  .validator((input: { product_id: string }) =>
     z.object({ product_id: z.string().uuid() }).parse(input),
   )
   .handler(async ({ data, context }) => {
@@ -107,7 +107,7 @@ export const addToWishlist = createServerFn({ method: "POST" })
 
 export const removeFromWishlist = createServerFn({ method: "POST" })
   .middleware([requireSupabaseAuth])
-  .inputValidator((input: { product_id: string }) =>
+  .validator((input: { product_id: string }) =>
     z.object({ product_id: z.string().uuid() }).parse(input),
   )
   .handler(async ({ data, context }) => {
@@ -130,7 +130,7 @@ const reviewInput = z.object({
 
 export const submitReview = createServerFn({ method: "POST" })
   .middleware([requireSupabaseAuth])
-  .inputValidator((input) => reviewInput.parse(input))
+  .validator((input) => reviewInput.parse(input))
   .handler(async ({ data, context }) => {
     const { error } = await supabaseAdmin.from("reviews").upsert(
       {
@@ -162,7 +162,7 @@ export const getMyReviews = createServerFn({ method: "GET" })
 
 export const deleteMyReview = createServerFn({ method: "POST" })
   .middleware([requireSupabaseAuth])
-  .inputValidator((input: { id: string }) => z.object({ id: z.string().uuid() }).parse(input))
+  .validator((input: { id: string }) => z.object({ id: z.string().uuid() }).parse(input))
   .handler(async ({ data, context }) => {
     const { error } = await supabaseAdmin
       .from("reviews")

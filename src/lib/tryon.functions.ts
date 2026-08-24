@@ -118,7 +118,7 @@ const submitSchema = z.object({
 
 export const submitTryOn = createServerFn({ method: "POST" })
   .middleware([requireSupabaseAuth])
-  .inputValidator((input) => submitSchema.parse(input))
+  .validator((input) => submitSchema.parse(input))
   .handler(async ({ data, context }) => {
     const { userId } = context;
     const providerPreviewUrl: string | null = null;
@@ -237,7 +237,7 @@ export const submitTryOn = createServerFn({ method: "POST" })
 
 export const getMyTryOnSession = createServerFn({ method: "POST" })
   .middleware([requireSupabaseAuth])
-  .inputValidator((d: { id: string }) => z.object({ id: z.string().uuid() }).parse(d))
+  .validator((d: { id: string }) => z.object({ id: z.string().uuid() }).parse(d))
   .handler(async ({ data, context }) => {
     const { userId } = context;
     const { data: row, error } = await supabaseAdmin

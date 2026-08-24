@@ -73,7 +73,7 @@ REGRAS OBRIGATÓRIAS:
 }
 
 export const doraChat = createServerFn({ method: "POST" })
-  .inputValidator((input) => chatSchema.parse(input))
+  .validator((input) => chatSchema.parse(input))
   .handler(async ({ data }) => {
     const apiKey = process.env.LOVABLE_API_KEY;
     if (!apiKey) throw new Error("LOVABLE_API_KEY missing");
@@ -189,7 +189,7 @@ const leadSchema = z.object({
 });
 
 export const createDoraLead = createServerFn({ method: "POST" })
-  .inputValidator((input) => leadSchema.parse(input))
+  .validator((input) => leadSchema.parse(input))
   .handler(async ({ data }) => {
     const { data: conv } = await supabaseAdmin
       .from("conversations")
