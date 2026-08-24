@@ -3,7 +3,7 @@
 > **Status:** Fonte Única de Verdade do Roadmap da Plataforma Comercial
 > **Repositório:** `dona-dora-premium-style`
 > **Proprietária:** 44CODE — Simone
-> **Branch Base:** `main` (`5775e34`)
+> **Branch Base:** `main` (`07d6436`)
 
 ---
 
@@ -44,8 +44,8 @@ Cada recurso ou fase do roadmap é estritamente classificado sob uma das seguint
   - Suite de 14 testes unitários cobrindo as invariantes críticas de pedidos (`src/lib/__tests__/createOrder.test.ts`).
 
 #### P1.2 — Authentication / Authorization / Identity Tests
-- **Status:** `PLANNED`
-- **Escopo:** Testes profundos com mocks de contexto para `requireSupabaseAuth`, middleware de admin (`assertAdmin`), permissões de usuário e vinculação estrita de identidade.
+- **Status:** `VERIFIED` / `COMPLETE` (incorporado em `main` no commit `07d6436`).
+- **Entregas:** Cobertura executável do boundary `requireSupabaseAuth`, RBAC `assertAdmin`, isolamento de histórico de pedidos por identidade autenticada e vínculo estrito de `customer_email` às claims JWT.
 
 #### P1.3 — CI Quality Gate
 - **Status:** `PLANNED`
