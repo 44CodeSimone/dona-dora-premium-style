@@ -2,7 +2,7 @@
 
 **Repositório:** `dona-dora-premium-style`
 **Proprietária:** 44CODE — Simone
-**Status Baseline:** Main Branch Synchronized (`main = 5775e34`)
+**Status Baseline:** Main Branch Synchronized (`main = 07d6436`)
 **Branch Atual:** `main`
 **Status P1.1:** VERIFIED & INCORPORATED INTO MAIN (PR #3 Merged)
 
@@ -56,11 +56,22 @@ Nesta etapa, estabelecemos a fundação de testes unitários automatizados no ec
 
 ---
 
-## 4. PRÓXIMAS FASES DO ROADMAP DA PLATAFORMA
+## 4. P1.2 — AUTENTICAÇÃO, AUTORIZAÇÃO E IDENTIDADE
+
+P1.2 foi incorporada em `main` no commit `07d6436` (PR #5), com cobertura executável para:
+
+1. Boundary real `requireSupabaseAuth`, incluindo rejeição sem Bearer token e propagação de claims verificadas.
+2. Vínculo de `customer_email` às claims autenticadas, ignorando qualquer e-mail enviado pelo cliente.
+3. Isolamento do histórico de pedidos pelo e-mail da identidade autenticada.
+4. RBAC `assertAdmin`, cobrindo negação para não-admin e permissão para admin.
+
+## 5. PRÓXIMAS FASES DO ROADMAP DA PLATAFORMA
 
 Consulte o documento oficial [`ROADMAP_DONA_DORA_PLATFORM.md`](file:///C:/Users/simon/OneDrive/Documentos/dona-dora-premium-style/ROADMAP_DONA_DORA_PLATFORM.md) para a hierarquia completa de fases da plataforma (P1.2 a P12).
 
-- **P1.2 — Invariantes de Autenticação / Autorização / Identidade:** `PLANNED`
-- **P1.3 — CI Quality Gate (GitHub Actions):** `PLANNED`
+- **P1.2 — Invariantes de Autenticação / Autorização / Identidade:** `VERIFIED` / `COMPLETE`
+- **P1.3 — CI Quality Gate (GitHub Actions):** `IMPLEMENTED` / `PENDING REVIEW`
 - **P1.4 — Type-Safety / API Modernization:** `PLANNED`
 - **P1.5 — Controlled Lint / Formatting Debt:** `TECHNICAL DEBT` / `PLANNED`
+
+> Enquanto P1.5 não for concluída, o CI executa o lint e o reporta sem bloqueio. Testes, tipos, build e integridade de diff permanecem bloqueantes.
