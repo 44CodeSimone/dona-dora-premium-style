@@ -38,7 +38,7 @@ export const getLiveData = createServerFn({ method: "GET" }).handler(async () =>
 
 // Public approved reviews
 export const getApprovedReviews = createServerFn({ method: "GET" })
-  .validator((d: { product_id?: string; limit?: number } | undefined) =>
+  .inputValidator((d: { product_id?: string; limit?: number } | undefined) =>
     z.object({ product_id: z.string().uuid().optional(), limit: z.number().int().min(1).max(50).optional() }).parse(d ?? {}),
   )
   .handler(async ({ data }) => {
@@ -55,7 +55,7 @@ export const getApprovedReviews = createServerFn({ method: "GET" })
   });
 
 export const getPublicProducts = createServerFn({ method: "GET" })
-  .validator(
+  .inputValidator(
     (d: { category?: string; featured?: boolean; brand?: string; search?: string; limit?: number } | undefined) =>
       z
         .object({
@@ -220,5 +220,5 @@ export async function createOrderForAuthenticatedCustomer(
 
 export const createOrder = createServerFn({ method: "POST" })
   .middleware([requireSupabaseAuth])
-  .validator((input) => orderSchema.parse(input))
+  .inputValidator((input) => orderSchema.parse(input))
   .handler(async ({ data, context }) => createOrderForAuthenticatedCustomer(data, context));
