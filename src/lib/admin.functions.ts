@@ -323,6 +323,117 @@ export const updateOrderStatus = createServerFn({ method: "POST" })
     return { ok: true };
   });
 
+// ------ TRASH BIN ------
+
+// Operational statuses that a trashed order can be restored to.
+// Kept as a module-level constant so it is shared between trashOrder and
+// restoreOrder without duplication.
+const RESTORABLE_STATUSES = new Set([
+  "novo",
+  "aguardando_pagamento",
+  "pago",
+  "separando",
+  "enviado",
+  "entregue",
+  "cancelado",
+  "concluido",
+]);
+
+// Move an order to the trash bin.
+// previous_status is always captured from the database — never from the client.
+export const trashOrder = createServerFn({ method: "POST" })
+  .middleware([requireSupabaseAuth])
+  .inputValidator((input: { id: string }) =>
+    z.object({ id: z.string().uuid() }).parse(input),
+  )
+  .handler(async ({ data, context }) => {
+    await assertAdmin(context.userId);
+    const { data: current, error: readErr } = await supabaseAdmin
+      .from("orders")
+      .select("status")
+      .eq("id", data.id)
+      .maybeSingle();
+    if (readErr) throw new Error(readErr.message);
+    if (!current) throw new Error("Pedido não encontrado.");
+    // Idempotent: already in trash — no second write.
+    if (current.status === "trash") return { ok: true };
+    const { error } = await supabaseAdmin
+      .from("orders")
+      .update({
+        status: "trash",
+        previous_status: current.status,
+        updated_at: new Date().toISOString(),
+      })
+      .eq("id", data.id);
+    if (error) throw new Error(error.message);
+    return { ok: true };
+  });
+
+// Restore an order from the trash bin to its previous operational status.
+// The restore target always comes from the database; the client supplies only
+// the order UUID. Invalid / null / "trash" previous_status falls back to "novo".
+export const restoreOrder = createServerFn({ method: "POST" })
+  .middleware([requireSupabaseAuth])
+  .inputValidator((input: { id: string }) =>
+    z.object({ id: z.string().uuid() }).parse(input),
+  )
+  .handler(async ({ data, context }) => {
+    await assertAdmin(context.userId);
+    const { data: current, error: readErr } = await supabaseAdmin
+      .from("orders")
+      .select("status, previous_status")
+      .eq("id", data.id)
+      .maybeSingle();
+    if (readErr) throw new Error(readErr.message);
+    if (!current) throw new Error("Pedido não encontrado.");
+    // Idempotent: not in trash — nothing to do.
+    if (current.status !== "trash") return { ok: true, status: current.status };
+    const restoreTo =
+      current.previous_status && RESTORABLE_STATUSES.has(current.previous_status)
+        ? current.previous_status
+        : "novo";
+    const { error } = await supabaseAdmin
+      .from("orders")
+      .update({
+        status: restoreTo,
+        previous_status: null,
+        updated_at: new Date().toISOString(),
+      })
+      .eq("id", data.id);
+    if (error) throw new Error(error.message);
+    return { ok: true, status: restoreTo };
+  });
+
+// Permanently delete an order. Only succeeds when the current database status
+// is exactly "trash" — preventing accidental deletion of live orders.
+export const deleteOrderPermanently = createServerFn({ method: "POST" })
+  .middleware([requireSupabaseAuth])
+  .inputValidator((input: { id: string }) =>
+    z.object({ id: z.string().uuid() }).parse(input),
+  )
+  .handler(async ({ data, context }) => {
+    await assertAdmin(context.userId);
+    const { data: current, error: readErr } = await supabaseAdmin
+      .from("orders")
+      .select("status")
+      .eq("id", data.id)
+      .maybeSingle();
+    if (readErr) throw new Error(readErr.message);
+    // Idempotent: order already gone — treat as success.
+    if (!current) return { ok: true };
+    if (current.status !== "trash") {
+      throw new Error(
+        "Mova o pedido para a lixeira antes de excluir permanentemente.",
+      );
+    }
+    const { error } = await supabaseAdmin
+      .from("orders")
+      .delete()
+      .eq("id", data.id);
+    if (error) throw new Error(error.message);
+    return { ok: true };
+  });
+
 // ------ DASHBOARD ------
 export const getAdminStats = createServerFn({ method: "GET" })
   .middleware([requireSupabaseAuth])

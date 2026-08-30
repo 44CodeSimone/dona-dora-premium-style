@@ -59,6 +59,9 @@ export async function getOrdersForAuthenticatedCustomer(context: { claims?: { em
     .from("orders")
     .select("id,created_at,status,subtotal,items,customer_name,customer_whatsapp")
     .eq("customer_email", email)
+    // Exclude orders moved to the admin trash bin — they must not appear in the
+    // customer's "Meus Pedidos" history.
+    .neq("status", "trash")
     .order("created_at", { ascending: false })
     .limit(100);
   if (error) throw new Error(error.message);
